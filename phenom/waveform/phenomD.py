@@ -1,4 +1,5 @@
 from phenom.waveform.waveform import Waveform
+from phenom.utils.utils import M_eta_m1_m2, chipn
 from numpy import sqrt, pi
 
 class UsefulPowers(object):
@@ -18,19 +19,19 @@ powers_of_pi = UsefulPowers(pi)
 
 class PhenomDInternals(object):
     """docstring for PhenomDInternals"""
-    def __init__(self, arg):
-        self.arg = arg
+    def __init__(self, m1, m2, chi1z, chi2z):
+        self.m1 = m1
+        self.m2 = m2
+        self.chi1z = chi1z
+        self.chi2z = chi2z
+        self.M, self.eta = M_eta_m1_m2(self.m1, self.m2)
+        self.chi = chipn(self.eta, self.chi1z, self.chi2z)
+        # self.arg = arg
 
 class PhenomDInternalsAmplitude(PhenomDInternals):
     """docstring for PhenomDInternalsAmplitude"""
     def __init__(self, arg):
         self.arg = arg
-
-    def amp0Func(self, eta):
-        """
-        amplitude scaling factor defined by eq. 17 in 1508.07253
-        """
-        return (sqrt(2.0/3.0)*sqrt(eta)) / powers_of_pi.sixth
 
     # ///////////////////////////// Amplitude: Inspiral functions /////////////////////////
 

@@ -1,4 +1,4 @@
-from numpy import sqrt
+from numpy import sqrt, pi
 
 # >>> import lal
 # >>> print lal.MTSUN_SI
@@ -125,3 +125,9 @@ def chipn(eta, chi1z, chi2z):
     chi_s = (chi1z + chi2z) / 2.0;
     chi_a = (chi1z - chi2z) / 2.0;
     return chi_s * (1.0 - eta * 76.0/113.0) + delta * chi_a;
+
+def amp0Func(self, eta):
+    """
+    amplitude scaling factor defined by eq. 17 in 1508.07253
+    """
+    return (sqrt(2.0/3.0)*sqrt(eta)) / pi**(1.0/6.0)
