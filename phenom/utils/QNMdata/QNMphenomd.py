@@ -1,6 +1,4 @@
-
 from numpy import array
-
 
 QNMData = {}
 
