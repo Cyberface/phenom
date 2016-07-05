@@ -140,6 +140,21 @@ def pow_2_of(number):
     """
     return number*number
 
+def pow_3_of(number):
+    """
+    cube input number
+    helper function from lalsimulation/src/LALSimIMRPhenomD_internals.h
+    """
+    return number*number*number
+
+def pow_4_of(number):
+    """
+    fourth power of number
+    helper function from lalsimulation/src/LALSimIMRPhenomD_internals.h
+    """
+    pow2 = pow_2_of(number)
+    return pow2 * pow2
+
 class UsefulPowers(object):
     """init_useful_powers from phenomD LAL code"""
     def __init__(self, number):

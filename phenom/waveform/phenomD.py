@@ -1,7 +1,7 @@
 from phenom.waveform.waveform import Waveform
-from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, __MTSUN_SI__, __MSUN_SI__, pow_2_of
+from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, __MTSUN_SI__, __MSUN_SI__, pow_2_of, pow_3_of
 from phenom.utils.remnant import fring, fdamp, FinalSpin0815
-from numpy import sqrt, pi, arange, zeros, exp
+from numpy import sqrt, pi, arange, zeros, exp, fabs
 
 class PhenomDInternalsAmplitude(object):
     """docstring for PhenomDInternalsAmplitude"""
@@ -272,6 +272,278 @@ class PhenomDInternalsAmplitude(object):
         - (gamma2*gamma1) / ( expfactor * (pow2pluspow2))
 
 
+    def fmaxCalc(self, p):
+        """
+        Equation 20 arXiv:1508.07253 (called f_peak in paper)
+        analytic location of maximum of AmpMRDAnsatz
+        """
+        fRD    = p['fRD']
+        fDM    = p['fDM']
+        gamma2 = p['gamma2']
+        gamma3 = p['gamma3']
+
+        # // NOTE: There's a problem with this expression from the paper becoming imaginary if gamma2>=1
+        # // Fix: if gamma2 >= 1 then set the square root term to zero.
+        if (gamma2 <= 1):
+            return fabs(fRD + (fDM*(-1 + sqrt(1 - pow_2_of(gamma2)))*gamma3)/gamma2)
+        else:
+            return fabs(fRD + (fDM*(-1)*gamma3)/gamma2)
+
+    # ///////////////////////////// Amplitude: Intermediate functions ////////////////////////
+
+    # // Phenom coefficients delta0, ..., delta4 determined from collocation method
+    # // (constraining 3 values and 2 derivatives)
+    # // AmpIntAnsatzFunc[]
+
+    def AmpIntAnsatz(self, Mf, p):
+        """
+        Ansatz for the intermediate amplitude. Equation 21 arXiv:1508.07253
+        """
+        Mf2 = Mf*Mf
+        Mf3 = Mf*Mf2
+        Mf4 = Mf*Mf3
+        return p['delta0'] + p['delta1']*Mf + p['delta2']*Mf2 + p['delta3']*Mf3 + p['delta4']*Mf4
+
+    def AmpIntColFitCoeff(self, p):
+        """
+        The function name stands for 'Amplitude Intermediate Collocation Fit Coefficient'
+        This is the 'v2' value in Table 5 of arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
+
+        return 0.8149838730507785 + 2.5747553517454658*eta \
+        + (1.1610198035496786 - 2.3627771785551537*eta + 6.771038707057573*eta2)*xi \
+        + (0.7570782938606834 - 2.7256896890432474*eta + 7.1140380397149965*eta2)*xi2 \
+        + (0.1766934149293479 - 0.7978690983168183*eta + 2.1162391502005153*eta2)*xi3
+
+    def delta0_fun(self, p, d):
+        """
+        p : dict
+        d : dict of delta
+        The following functions (delta{0,1,2,3,4}_fun) were derived
+        in mathematica according to
+        the constraints detailed in arXiv:1508.07253,
+        section 'Region IIa - intermediate'.
+        These are not given in the paper.
+        Can be rederived by solving Equation 21 for the constraints
+        given in Equations 22-26 in arXiv:1508.07253
+        """
+        f1 = p['f1']
+        f2 = p['f2']
+        f3 = p['f3']
+        v1 = p['v1']
+        v2 = p['v2']
+        v3 = p['v3']
+        d1 = p['d1']
+        d2 = p['d2']
+
+        f12 = d['f12']
+        f13 = d['f13']
+        f14 = d['f14']
+        f15 = d['f15']
+        f22 = d['f22']
+        f23 = d['f23']
+        f24 = d['f24']
+        f32 = d['f32']
+        f33 = d['f33']
+        f34 = d['f34']
+        f35 = d['f35']
+
+        return -((d2*f15*f22*f3 - 2*d2*f14*f23*f3 + d2*f13*f24*f3 - d2*f15*f2*f32 + d2*f14*f22*f32 \
+        - d1*f13*f23*f32 + d2*f13*f23*f32 + d1*f12*f24*f32 - d2*f12*f24*f32 + d2*f14*f2*f33 \
+        + 2*d1*f13*f22*f33 - 2*d2*f13*f22*f33 - d1*f12*f23*f33 + d2*f12*f23*f33 - d1*f1*f24*f33 \
+        - d1*f13*f2*f34 - d1*f12*f22*f34 + 2*d1*f1*f23*f34 + d1*f12*f2*f35 - d1*f1*f22*f35 \
+        + 4*f12*f23*f32*v1 - 3*f1*f24*f32*v1 - 8*f12*f22*f33*v1 + 4*f1*f23*f33*v1 + f24*f33*v1 \
+        + 4*f12*f2*f34*v1 + f1*f22*f34*v1 - 2*f23*f34*v1 - 2*f1*f2*f35*v1 + f22*f35*v1 - f15*f32*v2 \
+        + 3*f14*f33*v2 - 3*f13*f34*v2 + f12*f35*v2 - f15*f22*v3 + 2*f14*f23*v3 - f13*f24*v3 \
+        + 2*f15*f2*f3*v3 - f14*f22*f3*v3 - 4*f13*f23*f3*v3 + 3*f12*f24*f3*v3 - 4*f14*f2*f32*v3 \
+        + 8*f13*f22*f32*v3 - 4*f12*f23*f32*v3) / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(f3-f2)))
+
+    def delta1_fun(self, p, d):
+        f1 = p['f1']
+        f2 = p['f2']
+        f3 = p['f3']
+        v1 = p['v1']
+        v2 = p['v2']
+        v3 = p['v3']
+        d1 = p['d1']
+        d2 = p['d2']
+
+        f12 = d['f12']
+        f13 = d['f13']
+        f14 = d['f14']
+        f15 = d['f15']
+        f22 = d['f22']
+        f23 = d['f23']
+        f24 = d['f24']
+        f32 = d['f32']
+        f33 = d['f33']
+        f34 = d['f34']
+        f35 = d['f35']
+
+        return -((-(d2*f15*f22) + 2*d2*f14*f23 - d2*f13*f24 - d2*f14*f22*f3 + 2*d1*f13*f23*f3 \
+        + 2*d2*f13*f23*f3 - 2*d1*f12*f24*f3 - d2*f12*f24*f3 + d2*f15*f32 - 3*d1*f13*f22*f32 \
+        - d2*f13*f22*f32 + 2*d1*f12*f23*f32 - 2*d2*f12*f23*f32 + d1*f1*f24*f32 + 2*d2*f1*f24*f32 \
+        - d2*f14*f33 + d1*f12*f22*f33 + 3*d2*f12*f22*f33 - 2*d1*f1*f23*f33 - 2*d2*f1*f23*f33 \
+        + d1*f24*f33 + d1*f13*f34 + d1*f1*f22*f34 - 2*d1*f23*f34 - d1*f12*f35 + d1*f22*f35 \
+        - 8*f12*f23*f3*v1 + 6*f1*f24*f3*v1 + 12*f12*f22*f32*v1 - 8*f1*f23*f32*v1 - 4*f12*f34*v1 \
+        + 2*f1*f35*v1 + 2*f15*f3*v2 - 4*f14*f32*v2 + 4*f12*f34*v2 - 2*f1*f35*v2 - 2*f15*f3*v3 \
+        + 8*f12*f23*f3*v3 - 6*f1*f24*f3*v3 + 4*f14*f32*v3 - 12*f12*f22*f32*v3 + 8*f1*f23*f32*v3) \
+        / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(-f2 + f3)))
+
+    def delta2_fun(self, p, d):
+        f1 = p['f1']
+        f2 = p['f2']
+        f3 = p['f3']
+        v1 = p['v1']
+        v2 = p['v2']
+        v3 = p['v3']
+        d1 = p['d1']
+        d2 = p['d2']
+
+        f12 = d['f12']
+        f13 = d['f13']
+        f14 = d['f14']
+        f15 = d['f15']
+        f23 = d['f23']
+        f24 = d['f24']
+        f32 = d['f32']
+        f33 = d['f33']
+        f34 = d['f34']
+        f35 = d['f35']
+
+        return -((d2*f15*f2 - d1*f13*f23 - 3*d2*f13*f23 + d1*f12*f24 + 2*d2*f12*f24 - d2*f15*f3 \
+        + d2*f14*f2*f3 - d1*f12*f23*f3 + d2*f12*f23*f3 + d1*f1*f24*f3 - d2*f1*f24*f3 - d2*f14*f32 \
+        + 3*d1*f13*f2*f32 + d2*f13*f2*f32 - d1*f1*f23*f32 + d2*f1*f23*f32 - 2*d1*f24*f32 - d2*f24*f32 \
+        - 2*d1*f13*f33 + 2*d2*f13*f33 - d1*f12*f2*f33 - 3*d2*f12*f2*f33 + 3*d1*f23*f33 + d2*f23*f33 \
+        + d1*f12*f34 - d1*f1*f2*f34 + d1*f1*f35 - d1*f2*f35 + 4*f12*f23*v1 - 3*f1*f24*v1 + 4*f1*f23*f3*v1 \
+        - 3*f24*f3*v1 - 12*f12*f2*f32*v1 + 4*f23*f32*v1 + 8*f12*f33*v1 - f1*f34*v1 - f35*v1 - f15*v2 \
+        - f14*f3*v2 + 8*f13*f32*v2 - 8*f12*f33*v2 + f1*f34*v2 + f35*v2 + f15*v3 - 4*f12*f23*v3 + 3*f1*f24*v3 \
+        + f14*f3*v3 - 4*f1*f23*f3*v3 + 3*f24*f3*v3 - 8*f13*f32*v3 + 12*f12*f2*f32*v3 - 4*f23*f32*v3) \
+        / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(-f2 + f3)))
+
+    def delta3_fun(self, p, d):
+        f1 = p['f1']
+        f2 = p['f2']
+        f3 = p['f3']
+        v1 = p['v1']
+        v2 = p['v2']
+        v3 = p['v3']
+        d1 = p['d1']
+        d2 = p['d2']
+
+        f12 = d['f12']
+        f13 = d['f13']
+        f14 = d['f14']
+        f22 = d['f22']
+        f24 = d['f24']
+        f32 = d['f32']
+        f33 = d['f33']
+        f34 = d['f34']
+
+        return -((-2*d2*f14*f2 + d1*f13*f22 + 3*d2*f13*f22 - d1*f1*f24 - d2*f1*f24 + 2*d2*f14*f3 \
+        - 2*d1*f13*f2*f3 - 2*d2*f13*f2*f3 + d1*f12*f22*f3 - d2*f12*f22*f3 + d1*f24*f3 + d2*f24*f3 \
+        + d1*f13*f32 - d2*f13*f32 - 2*d1*f12*f2*f32 + 2*d2*f12*f2*f32 + d1*f1*f22*f32 - d2*f1*f22*f32 \
+        + d1*f12*f33 - d2*f12*f33 + 2*d1*f1*f2*f33 + 2*d2*f1*f2*f33 - 3*d1*f22*f33 - d2*f22*f33 \
+        - 2*d1*f1*f34 + 2*d1*f2*f34 - 4*f12*f22*v1 + 2*f24*v1 + 8*f12*f2*f3*v1 - 4*f1*f22*f3*v1 \
+        - 4*f12*f32*v1 + 8*f1*f2*f32*v1 - 4*f22*f32*v1 - 4*f1*f33*v1 + 2*f34*v1 + 2*f14*v2 \
+        - 4*f13*f3*v2 + 4*f1*f33*v2 - 2*f34*v2 - 2*f14*v3 + 4*f12*f22*v3 - 2*f24*v3 + 4*f13*f3*v3 \
+        - 8*f12*f2*f3*v3 + 4*f1*f22*f3*v3 + 4*f12*f32*v3 - 8*f1*f2*f32*v3 + 4*f22*f32*v3) \
+        / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(-f2 + f3)))
+
+    def delta4_fun(self, p, d):
+        f1 = p['f1']
+        f2 = p['f2']
+        f3 = p['f3']
+        v1 = p['v1']
+        v2 = p['v2']
+        v3 = p['v3']
+        d1 = p['d1']
+        d2 = p['d2']
+
+        f12 = d['f12']
+        f13 = d['f13']
+        f22 = d['f22']
+        f23 = d['f23']
+        f32 = d['f32']
+        f33 = d['f33']
+
+        return -((d2*f13*f2 - d1*f12*f22 - 2*d2*f12*f22 + d1*f1*f23 + d2*f1*f23 - d2*f13*f3 + 2*d1*f12*f2*f3 \
+        + d2*f12*f2*f3 - d1*f1*f22*f3 + d2*f1*f22*f3 - d1*f23*f3 - d2*f23*f3 - d1*f12*f32 + d2*f12*f32 \
+        - d1*f1*f2*f32 - 2*d2*f1*f2*f32 + 2*d1*f22*f32 + d2*f22*f32 + d1*f1*f33 - d1*f2*f33 + 3*f1*f22*v1 \
+        - 2*f23*v1 - 6*f1*f2*f3*v1 + 3*f22*f3*v1 + 3*f1*f32*v1 - f33*v1 - f13*v2 + 3*f12*f3*v2 - 3*f1*f32*v2 \
+        + f33*v2 + f13*v3 - 3*f1*f22*v3 + 2*f23*v3 - 3*f12*f3*v3 + 6*f1*f2*f3*v3 - 3*f22*f3*v3) \
+        / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(-f2 + f3)))
+
+    def ComputeDeltasFromCollocation(self, p, amp_prefactors, powers_of_pi, powers_of_Mf):
+        """
+        Output: None, It adds
+        f1,f2,f3,v1,v2,v3,d1,d2
+        and
+        delta0,delta1,delta2,delta3,delta4
+        to the 'p' dict
+        Calculates delta_i's
+        Method described in arXiv:1508.07253 section 'Region IIa - intermediate'
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        # // Three evenly spaced collocation points in the interval [f1,f3].
+        f1 = self.AMP_fJoin_INS # in Mf
+        f3 = p['fmaxCalc'] # in Mf
+        dfx = (f3 - f1)/2.0 # in Mf
+        f2 = f1 + dfx # in Mf
+
+        powers_of_f1 = UsefulPowers(f1)
+
+        # // v1 is inspiral model evaluated at f1
+        # // d1 is derivative of inspiral model evaluated at f1
+        v1 = self.AmpInsAnsatz(f1, powers_of_f1, amp_prefactors)
+        d1 = self.DAmpInsAnsatz(f1, p, powers_of_pi, powers_of_Mf)
+
+        # // v3 is merger-ringdown model evaluated at f3
+        # // d2 is derivative of merger-ringdown model evaluated at f3
+        v3 = self.AmpMRDAnsatz(f3, p)
+        d2 = self.DAmpMRDAnsatz(f3, p)
+
+        # // v2 is the value of the amplitude evaluated at f2
+        # // they come from the fit of the collocation points in the intermediate region
+        v2 = self.AmpIntColFitCoeff(p)
+
+        # save these to the `global p dictionary'
+        self.p['f1'] = f1
+        self.p['f2'] = f2
+        self.p['f3'] = f3
+        self.p['v1'] = v1
+        self.p['v2'] = v2
+        self.p['v3'] = v3
+        self.p['d1'] = d1
+        self.p['d2'] = d2
+
+        # // Now compute the delta_i's from the collocation coefficients
+        # // Precompute common quantities here and pass along to delta functions.
+        d = {}
+        d['f12'] = f1*f1
+        d['f13'] = f1*d['f12']
+        d['f14'] = f1*d['f13']
+        d['f15'] = f1*d['f14']
+        d['f22'] = f2*f2
+        d['f23'] = f2*d['f22']
+        d['f24'] = f2*d['f23']
+        d['f32'] = f3*f3
+        d['f33'] = f3*d['f32']
+        d['f34'] = f3*d['f33']
+        d['f35'] = f3*d['f34']
+        self.p['delta0'] = self.delta0_fun(self.p, d)
+        self.p['delta1'] = self.delta1_fun(self.p, d)
+        self.p['delta2'] = self.delta2_fun(self.p, d)
+        self.p['delta3'] = self.delta3_fun(self.p, d)
+        self.p['delta4'] = self.delta4_fun(self.p, d)
+
 class PhenomDInternals(PhenomDInternalsAmplitude):
     """docstring for PhenomDInternals"""
     def __init__(self):
@@ -334,12 +606,11 @@ class PhenomD(Waveform, PhenomDInternals):
 
         # compute prediction of ringdown frequency
         self.p['finspin'] = FinalSpin0815(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
-        self.p['fRD'] = fring(self.p['eta'], self.p['chi1z'], self.p['chi2z'], self.p['finspin'])
-        self.p['fDM'] = fdamp(self.p['eta'], self.p['chi1z'], self.p['chi2z'], self.p['finspin'])
+        self.p['fRD']     = fring(self.p['eta'], self.p['chi1z'], self.p['chi2z'], self.p['finspin'])
+        self.p['fDM']     = fdamp(self.p['eta'], self.p['chi1z'], self.p['chi2z'], self.p['finspin'])
 
 
-
-        print self.rho3_fun(self.p)
+        print "self.rho3_fun(self.p) = ", self.rho3_fun(self.p)
 
         #TODO: populate amplitude and phase phenom coefficient dictionaries
         #inspiral amplitude coeffs
@@ -358,14 +629,16 @@ class PhenomD(Waveform, PhenomDInternals):
         self.p['gamma2'] = self.gamma2_fun(self.p)
         self.p['gamma3'] = self.gamma3_fun(self.p)
 
+        self.p['fmaxCalc'] = self.fmaxCalc(self.p)
+
         #inspiral phase coeffs
         #inspiral phase prefactors
         #intermediate phase coeffs
         #merger-ringdown phase coeffs
 
 
-        print self.AmpMRDAnsatz(0.088, self.p)
-        print self.DAmpMRDAnsatz(0.088, self.p)
+        print "self.AmpMRDAnsatz(0.088, self.p) = ",self.AmpMRDAnsatz(0.088, self.p)
+        print "self.DAmpMRDAnsatz(0.088, self.p) = ",self.DAmpMRDAnsatz(0.088, self.p)
 
 
         # print super(PhenomD, self).rho3_fun(self.p['eta'], self.p['chipn'])
