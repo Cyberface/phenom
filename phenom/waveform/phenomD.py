@@ -180,10 +180,10 @@ class PhenomDInternalsAmplitude(object):
         - 77287373856*chi22*Seta + 5841690624*(chi1 + chi2)*Pi + 21384760320*Pi2)))/3.0042980352e10 \
         + (7.0/3.0)*pow(Mf,4.0/3.0)*rho1 + (8.0/3.0)*powers_of_Mf.five_thirds*rho2 + 3*Mf2*rho3
 
-# /////////////////////////// Amplitude: Merger-Ringdown functions ///////////////////////
-#
-# // Phenom coefficients gamma1, ..., gamma3
-# // AmpMRDAnsatzFunc[]
+    # /////////////////////////// Amplitude: Merger-Ringdown functions ///////////////////////
+    #
+    # // Phenom coefficients gamma1, ..., gamma3
+    # // AmpMRDAnsatzFunc[]
 
     def gamma1_fun(self, p):
         """
@@ -610,7 +610,7 @@ class PhenomD(Waveform, PhenomDInternals):
 
 
         print "self.rho3_fun(self.p) = ", self.rho3_fun(self.p)
-        
+
         #inspiral amplitude coeffs
         self.p['rho1'] = self.rho1_fun(self.p)
         self.p['rho2'] = self.rho2_fun(self.p)
