@@ -16,6 +16,7 @@ class Waveform(object):
         """p is actually a kwargs but is used in classes like PhenomD"""
         self.p = p
         # TODO: set default values for p
+        # NOTE: THIS ACTUALLY ISN'T USED RIGHT NOW!!!!!!
 
     def waveform_method(self):
         print "I am from Waveform"

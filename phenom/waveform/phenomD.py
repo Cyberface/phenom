@@ -549,7 +549,6 @@ class PhenomDInternals(PhenomDInternalsAmplitude):
     def __init__(self):
         pass
 
-# TODO:0 Figure out how to structure PhenomD class
 class PhenomD(Waveform, PhenomDInternals):
     """docstring for PhenomD"""
     # Use the constructor from the Waveform Class
@@ -611,8 +610,7 @@ class PhenomD(Waveform, PhenomDInternals):
 
 
         print "self.rho3_fun(self.p) = ", self.rho3_fun(self.p)
-
-        #TODO: populate amplitude and phase phenom coefficient dictionaries
+        
         #inspiral amplitude coeffs
         self.p['rho1'] = self.rho1_fun(self.p)
         self.p['rho2'] = self.rho2_fun(self.p)
@@ -634,6 +632,7 @@ class PhenomD(Waveform, PhenomDInternals):
         #intermediate amplitude coeffs
         self.ComputeDeltasFromCollocation(self.p, self.amp_prefactors, self.powers_of_pi)
 
+        #TODO: populate phase phenom coefficient dictionaries
         #inspiral phase coeffs
         #inspiral phase prefactors
         #intermediate phase coeffs
@@ -649,17 +648,13 @@ class PhenomD(Waveform, PhenomDInternals):
         # super(PhenomD, self).interal()
         # super(PhenomDInternals, self).interal()
 
-
-        # flist = arange(self.p['f_min'], self.p['f_max'], self.p['delta_f'])
-        # amp = zeros(len(flist))
-        # phi = zeros(len(flist))
-        # for i in range(len(flist)):
-            # Mf = flist[i] * self.M_sec
-            # self.powers_of_Mf = UsefulPowers(Mf)
-            # print Mf
-            # amp[i] = self.IMRPhenomDAmplitude(Mf, self.p, self.powers_of_Mf, self.amp_prefactors)
-            # phi[i] = self.IMRPhenomDPhase(Mf, self.p, self.pn, self.powers_of_Mf, self.phi_prefactors)
-
+        flist = arange(self.p['f_min'], self.p['f_max'], self.p['delta_f'])
+        amp = zeros(len(flist))
+        phi = zeros(len(flist))
+        for i in range(len(flist)):
+            Mf = flist[i] * self.M_sec
+            self.powers_of_Mf = UsefulPowers(Mf)
+            self.IMRPhenomDGenerateFD(Mf)
 
     def define_phenomD_constants(self):
         """
@@ -700,7 +695,7 @@ class PhenomD(Waveform, PhenomDInternals):
         pass
 
     def IMRPhenomDAmplitude(self, Mf, p, powers_of_Mf, amp_prefactors):
-        """// Call ComputeIMRPhenomDAmplitudeCoefficients() first!
+        """Call ComputeIMRPhenomDAmplitudeCoefficients() first!
         This function computes the IMR amplitude given phenom coefficients.
         Defined in VIII. Full IMR Waveforms arXiv:1508.07253
         """
@@ -731,5 +726,16 @@ class PhenomD(Waveform, PhenomDInternals):
     def IMRPhenomDGenerateFD(self, Mf):
         """
         generates frequency domain strain"""
+        # amp[i] = self.IMRPhenomDAmplitude(Mf, self.p, self.powers_of_Mf, self.amp_prefactors)
+        # phi[i] = self.IMRPhenomDPhase(Mf, self.p, self.pn, self.powers_of_Mf, self.phi_prefactors)
 
+        pass
+
+    def IMRPhenomDGenerateFDSingleFrequencyPoint(self, Mf, p):
+        """
+        standalone phenomD strain generator
+        """
+        powers_of_Mf = UsefulPowers(Mf)
+        # amp = self.IMRPhenomDAmplitude(Mf, self.p, powers_of_Mf, self.amp_prefactors)
+        # phi = self.IMRPhenomDPhase(Mf, self.p, self.pn, powers_of_Mf, self.phi_prefactors)
         pass
