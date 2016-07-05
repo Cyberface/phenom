@@ -126,8 +126,20 @@ def chipn(eta, chi1z, chi2z):
     chi_a = (chi1z - chi2z) / 2.0;
     return chi_s * (1.0 - eta * 76.0/113.0) + delta * chi_a;
 
-def amp0Func(self, eta):
+def amp0Func(eta):
     """
     amplitude scaling factor defined by eq. 17 in 1508.07253
     """
     return (sqrt(2.0/3.0)*sqrt(eta)) / pi**(1.0/6.0)
+
+class UsefulPowers(object):
+    """init_useful_powers from phenomD LAL code"""
+    def __init__(self, number):
+        self.sixth        = number ** (1.0/6.0)
+        self.third        = self.sixth * self.sixth
+        self.two_thirds   = number / self.third
+        self.four_thirds  = number * (self.third);
+        self.five_thirds  = self.four_thirds * (self.third);
+        self.two          = number * number;
+        self.seven_thirds = self.third * self.two;
+        self.eight_thirds = self.two_thirds * self.two;
