@@ -480,7 +480,7 @@ class PhenomDInternalsAmplitude(object):
         + f33*v2 + f13*v3 - 3*f1*f22*v3 + 2*f23*v3 - 3*f12*f3*v3 + 6*f1*f2*f3*v3 - 3*f22*f3*v3) \
         / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(-f2 + f3)))
 
-    def ComputeDeltasFromCollocation(self, p, amp_prefactors, powers_of_pi, powers_of_Mf):
+    def ComputeDeltasFromCollocation(self, p, amp_prefactors, powers_of_pi):
         """
         Output: None, It adds
         f1,f2,f3,v1,v2,v3,d1,d2
@@ -503,7 +503,7 @@ class PhenomDInternalsAmplitude(object):
         # // v1 is inspiral model evaluated at f1
         # // d1 is derivative of inspiral model evaluated at f1
         v1 = self.AmpInsAnsatz(f1, powers_of_f1, amp_prefactors)
-        d1 = self.DAmpInsAnsatz(f1, p, powers_of_pi, powers_of_Mf)
+        d1 = self.DAmpInsAnsatz(f1, p, powers_of_pi, powers_of_f1)
 
         # // v3 is merger-ringdown model evaluated at f3
         # // d2 is derivative of merger-ringdown model evaluated at f3
@@ -623,13 +623,16 @@ class PhenomD(Waveform, PhenomDInternals):
 
         # print self.AmpInsAnsatz(0.08, UsefulPowers(0.08), self.amp_prefactors)
         # print self.DAmpInsAnsatz(0.08, self.p, self.powers_of_pi, UsefulPowers(0.08))
-        #intermediate amplitude coeffs
         #merger-ringdown amplitude coeffs
         self.p['gamma1'] = self.gamma1_fun(self.p)
         self.p['gamma2'] = self.gamma2_fun(self.p)
         self.p['gamma3'] = self.gamma3_fun(self.p)
 
+        # fmaxCalc is the peak of the merger-ringdown amplitude function
         self.p['fmaxCalc'] = self.fmaxCalc(self.p)
+
+        #intermediate amplitude coeffs
+        self.ComputeDeltasFromCollocation(self.p, self.amp_prefactors, self.powers_of_pi)
 
         #inspiral phase coeffs
         #inspiral phase prefactors
@@ -651,8 +654,8 @@ class PhenomD(Waveform, PhenomDInternals):
         # amp = zeros(len(flist))
         # phi = zeros(len(flist))
         # for i in range(len(flist)):
-        #     Mf = flist[i] * self.M_sec
-        #     self.powers_of_Mf = UsefulPowers(Mf)
+            # Mf = flist[i] * self.M_sec
+            # self.powers_of_Mf = UsefulPowers(Mf)
             # print Mf
             # amp[i] = self.IMRPhenomDAmplitude(Mf, self.p, self.powers_of_Mf, self.amp_prefactors)
             # phi[i] = self.IMRPhenomDPhase(Mf, self.p, self.pn, self.powers_of_Mf, self.phi_prefactors)
@@ -696,38 +699,31 @@ class PhenomD(Waveform, PhenomDInternals):
         self.MAX_ALLOWED_MASS_RATIO = 5000
         pass
 
-    # def IMRPhenomDAmplitude(self, Mf, p, powers_of_Mf, amp_dict, amp_prefactors):
-    #     """// Call ComputeIMRPhenomDAmplitudeCoefficients() first!
-    #     This function computes the IMR amplitude given phenom coefficients.
-    #     Defined in VIII. Full IMR Waveforms arXiv:1508.07253
-    #     """
-    #     # Defined in VIII. Full IMR Waveforms arXiv:1508.07253
-    #     # The inspiral, intermediate and merger-ringdown amplitude parts
-    #
-    #     # Transition frequencies
-    #     p->fInsJoin = self.AMP_fJoin_INS
-    #     p->fMRDJoin = p->fmaxCalc
-    #
-    #     f_seven_sixths = f * powers_of_Mf.sixth
-    #     AmpPreFac = amp_prefactors['amp0'] / f_seven_sixths
-    #
-    #     # split the calculation to just 1 of 3 possible mutually exclusive ranges
-    #
-    #     if (!StepFunc_boolean(f, p->fInsJoin))	# Inspiral range
-    #     {
-    #       AmpIns = AmpPreFac * AmpInsAnsatz(f, powers_of_Mf, amp_prefactors)
-    #       return AmpIns
-    #     }
-    #
-    #     if (StepFunc_boolean(f, p->fMRDJoin))	# MRD range
-    #     {
-    #       AmpMRD = AmpPreFac * AmpMRDAnsatz(f, p)
-    #       return AmpMRD
-    #     }
-    #
-    #     #	Intermediate range
-    #     AmpInt = AmpPreFac * AmpIntAnsatz(f, p)
-    #     return AmpInt
+    def IMRPhenomDAmplitude(self, Mf, p, powers_of_Mf, amp_prefactors):
+        """// Call ComputeIMRPhenomDAmplitudeCoefficients() first!
+        This function computes the IMR amplitude given phenom coefficients.
+        Defined in VIII. Full IMR Waveforms arXiv:1508.07253
+        """
+        # Defined in VIII. Full IMR Waveforms arXiv:1508.07253
+        # The inspiral, intermediate and merger-ringdown amplitude parts
+
+        # Transition frequencies
+        p['fInsJoin'] = self.AMP_fJoin_INS
+        p['fMRDJoin'] = p['fmaxCalc']
+
+        AmpPreFac = amp_prefactors['amp0'] / powers_of_Mf.seven_sixths
+        # split the calculation to just 1 of 3 possible mutually exclusive ranges
+        # this effectively implements a step function transition function
+        if (Mf <= p['fInsJoin']):	# Inspiral range
+            AmpIns = AmpPreFac * self.AmpInsAnsatz(Mf, powers_of_Mf, amp_prefactors)
+            return AmpIns
+        elif (Mf >= p['fMRDJoin']):	# MRD range
+            AmpMRD = AmpPreFac * self.AmpMRDAnsatz(Mf, p)
+            return AmpMRD
+        else:
+            #	Intermediate range
+            AmpInt = AmpPreFac * self.AmpIntAnsatz(Mf, p)
+            return AmpInt
 
     def IMRPhenomDPhase(self, Mf, p, pn, powers_of_Mf, phi_prefactors):
         pass

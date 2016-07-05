@@ -161,8 +161,9 @@ class UsefulPowers(object):
         self.sixth        = number ** (1.0/6.0)
         self.third        = self.sixth * self.sixth
         self.two_thirds   = number / self.third
-        self.four_thirds  = number * (self.third);
-        self.five_thirds  = self.four_thirds * (self.third);
-        self.two          = number * number;
-        self.seven_thirds = self.third * self.two;
-        self.eight_thirds = self.two_thirds * self.two;
+        self.four_thirds  = number * (self.third)
+        self.five_thirds  = self.four_thirds * (self.third)
+        self.two          = number * number
+        self.seven_thirds = self.third * self.two
+        self.eight_thirds = self.two_thirds * self.two
+        self.seven_sixths = number * self.sixth
