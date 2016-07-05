@@ -4,6 +4,7 @@ from numpy import sqrt, pi
 # >>> print lal.MTSUN_SI
 # 4.92549102554e-06
 __MTSUN_SI__ = 4.92549102554e-06
+__MSUN_SI__ = 1.9885469549614615e+30
 
 def MftoHz(Mf, M):
     """MftoHz(Mf, M)
@@ -131,6 +132,13 @@ def amp0Func(eta):
     amplitude scaling factor defined by eq. 17 in 1508.07253
     """
     return (sqrt(2.0/3.0)*sqrt(eta)) / pi**(1.0/6.0)
+
+def pow_2_of(number):
+    """
+    squares input number
+    helper function from lalsimulation/src/LALSimIMRPhenomD_internals.h
+    """
+    return number*number
 
 class UsefulPowers(object):
     """init_useful_powers from phenomD LAL code"""

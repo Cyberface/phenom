@@ -16,8 +16,6 @@ class Waveform(object):
         """p is actually a kwargs but is used in classes like PhenomD"""
         self.p = p
         # TODO: set default values for p
-        if 'f_max' not in p.keys():
-            self.p['f_max'] = 0
 
     def waveform_method(self):
         print "I am from Waveform"
