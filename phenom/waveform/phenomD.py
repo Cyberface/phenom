@@ -156,6 +156,12 @@ class PhenomD(Waveform, PhenomDInternals):
     def __init__(self, **p):
         super(PhenomD, self).__init__(p)
 
+        self.define_phenomD_constatns()
+
+        # Default PhenomD values
+
+        if self.p['f_max'] == 0: self.p['f_max'] = self.f_CUT
+
         #initialise UsefulPowers instances
         self.powers_of_pi = UsefulPowers(pi)
         # self.powers_of_Mf = UsefulPowers(Mf)
@@ -177,11 +183,55 @@ class PhenomD(Waveform, PhenomDInternals):
         # super(PhenomD, self).interal()
         # super(PhenomDInternals, self).interal()
 
-    def amp(self):
+    def define_phenomD_constatns(self):
+        """
+        sets phenomD CONSTANTS
+        https://github.com/lscsoft/lalsuite/blob/master/lalsimulation/src/LALSimIMRPhenomD.h
+        """
+        # /* CONSTANTS */
+
+        # /**
+        #  * Dimensionless frequency (Mf) at which define the end of the waveform
+        #  */
+        self.f_CUT = 0.2
+
+        # /**
+        #  * Dimensionless frequency (Mf) at which the inspiral amplitude
+        #  * switches to the intermediate amplitude
+        #  */
+        self.AMP_fJoin_INS = 0.014
+
+        # /**
+        #  * Dimensionless frequency (Mf) at which the inspiral phase
+        #  * switches to the intermediate phase
+        #  */
+        self.PHI_fJoin_INS = 0.018
+
+        # /**
+        #   * Minimal final spin value below which the waveform might behave pathological
+        #   * because the ISCO frequency is too low. For more details, see the review wiki
+        #   * page https://www.lsc-group.phys.uwm.edu/ligovirgo/cbcnote/WaveformsReview/IMRPhenomDCodeReview/PhenD_LargeNegativeSpins
+        #   */
+        self.MIN_FINAL_SPIN = -0.717
+
+        # /**
+        #   * A large mass ratio causes memory over-runs.
+        #   * We test and put the limit an order of magnitude above that of previous waveform models (which were around q=100).
+        #   */
+        self.MAX_ALLOWED_MASS_RATIO = 5000
+        pass
+        
+    def IMRPhenomDAmplitude(self, Mf, p, powers_of_Mf, amp_prefactors):
         pass
 
+    def IMRPhenomDPhase(self, Mf, p, pn, powers_of_Mf, phi_prefactors):
+        pass
 
-    def h(self):
+    def IMRPhenomDGenerateFD(self, Mf):
         """
         generates frequency domain strain"""
-        pass
+
+        # flist = arange(p['f_min'], p['f_max'], p['delta_f'])
+
+        # for f in flist:
+            # pass
