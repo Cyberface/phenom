@@ -544,7 +544,276 @@ class PhenomDInternalsAmplitude(object):
         self.p['delta3'] = self.delta3_fun(self.p, d)
         self.p['delta4'] = self.delta4_fun(self.p, d)
 
-class PhenomDInternals(PhenomDInternalsAmplitude):
+class PhenomDInternalsPhase(object):
+    """docstring for PhenomDInternalsPhase"""
+    def __init__(self):
+        pass
+
+    # /********************************* Phase functions *********************************/
+    # ////////////////////////////// Phase: Ringdown functions ///////////////////////////
+
+    # // alpha_i i=1,2,3,4,5 are the phenomenological intermediate coefficients depending on eta and chiPN
+    # // PhiRingdownAnsatz is the ringdown phasing in terms of the alpha_i coefficients
+
+    def alpha1Fit(self, p):
+        """
+        alpha 1 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
+
+        return 43.31514709695348 + 638.6332679188081*eta \
+        + (-32.85768747216059 + 2415.8938269370315*eta - 5766.875169379177*eta2)*xi \
+        + (-61.85459307173841 + 2953.967762459948*eta - 8986.29057591497*eta2)*xi2 \
+        + (-21.571435779762044 + 981.2158224673428*eta - 3239.5664895930286*eta2)*xi3
+
+    def alpha2Fit(self, p):
+        """
+        alpha 2 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        double xi = -1 + chi
+        double xi2 = xi*xi
+        double xi3 = xi2*xi
+        double eta2 = eta*eta
+
+        return -0.07020209449091723 - 0.16269798450687084*eta \
+        + (-0.1872514685185499 + 1.138313650449945*eta - 2.8334196304430046*eta2)*xi \
+        + (-0.17137955686840617 + 1.7197549338119527*eta - 4.539717148261272*eta2)*xi2 \
+        + (-0.049983437357548705 + 0.6062072055948309*eta - 1.682769616644546*eta2)*xi3
+
+    def alpha3Fit(self, p):
+        """
+        alpha 3 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        double xi = -1 + chi
+        double xi2 = xi*xi
+        double xi3 = xi2*xi
+        double eta2 = eta*eta
+
+        return 9.5988072383479 - 397.05438595557433*eta \
+        + (16.202126189517813 - 1574.8286986717037*eta + 3600.3410843831093*eta2)*xi \
+        + (27.092429659075467 - 1786.482357315139*eta + 5152.919378666511*eta2)*xi2 \
+        + (11.175710130033895 - 577.7999423177481*eta + 1808.730762932043*eta2)*xi3
+
+    def alpha4Fit(self, p):
+        """
+        alpha 4 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        double xi = -1 + chi
+        double xi2 = xi*xi
+        double xi3 = xi2*xi
+        double eta2 = eta*eta
+
+        return -0.02989487384493607 + 1.4022106448583738*eta \
+        + (-0.07356049468633846 + 0.8337006542278661*eta + 0.2240008282397391*eta2)*xi \
+        + (-0.055202870001177226 + 0.5667186343606578*eta + 0.7186931973380503*eta2)*xi2 \
+        + (-0.015507437354325743 + 0.15750322779277187*eta + 0.21076815715176228*eta2)*xi3
+
+    def alpha5Fit(self, p):
+        """
+        alpha 5 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        double xi = -1 + chi
+        double xi2 = xi*xi
+        double xi3 = xi2*xi
+        double eta2 = eta*eta
+
+        return 0.9974408278363099 - 0.007884449714907203*eta \
+        + (-0.059046901195591035 + 1.3958712396764088*eta - 4.516631601676276*eta2)*xi \
+        + (-0.05585343136869692 + 1.7516580039343603*eta - 5.990208965347804*eta2)*xi2 \
+        + (-0.017945336522161195 + 0.5965097794825992*eta - 2.0608879367971804*eta2)*xi3
+
+    def PhiMRDAnsatzInt(self, Mf, p):
+        """
+        Ansatz for the merger-ringdown phase Equation 14 arXiv:1508.07253
+        """
+        sqrootf = sqrt(Mf);
+        fpow1_5 = Mf * sqrootf;
+        # // check if this is any faster: 2 sqrts instead of one pow(x,0.75)
+        fpow0_75 = sqrt(fpow1_5); # pow(f,0.75)
+
+        return -(p['alpha2']/Mf) \
+        + (4.0/3.0) * (p['alpha3'] * fpow0_75) \
+        + p['alpha1'] * Mf \
+        + p['alpha4'] * atan((Mf - p['alpha5'] * p['fRD']) / p['fDM'])
+
+    def DPhiMRD(self, Mf, p):
+        """
+        First frequency derivative of PhiMRDAnsatzInt
+        """
+        return (p['alpha1'] + p['alpha2']/pow_2_of(Mf) + p['alpha3']/(Mf**0.25) + \
+        p['alpha4']/(p['fDM']*(1 + pow_2_of(Mf - p['alpha5'] * p['fRD'])/pow_2_of(p['fDM'])))) / p['eta']
+
+    # ///////////////////////////// Phase: Intermediate functions /////////////////////////////
+    #
+    # // beta_i i=1,2,3 are the phenomenological intermediate coefficients depending on eta and chiPN
+    # // PhiIntAnsatz is the intermediate phasing in terms of the beta_i coefficients
+    #
+    #
+    # // \[Beta]1Fit = PhiIntFitCoeff\[Chi]PNFunc[\[Eta], \[Chi]PN][[1]]
+
+    def beta1Fit(self, p):
+        """
+        beta 1 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
+
+        return 97.89747327985583 - 42.659730877489224*eta \
+        + (153.48421037904913 - 1417.0620760768954*eta + 2752.8614143665027*eta2)*xi \
+        + (138.7406469558649 - 1433.6585075135881*eta + 2857.7418952430758*eta2)*xi2 \
+        + (41.025109467376126 - 423.680737974639*eta + 850.3594335657173*eta2)*xi3
+
+    def beta2Fit(self, p):
+        """
+        beta 2 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
+
+        return -3.282701958759534 - 9.051384468245866*eta \
+        + (-12.415449742258042 + 55.4716447709787*eta - 106.05109938966335*eta2)*xi \
+        + (-11.953044553690658 + 76.80704618365418*eta - 155.33172948098394*eta2)*xi2 \
+        + (-3.4129261592393263 + 25.572377569952536*eta - 54.408036707740465*eta2)*xi3
+
+    def beta3Fit(self, p):
+        """
+        beta 3 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
+
+        return -0.000025156429818799565 + 0.000019750256942201327*eta \
+        + (-0.000018370671469295915 + 0.000021886317041311973*eta + 0.00008250240316860033*eta2)*xi \
+        + (7.157371250566708e-6 - 0.000055780000112270685*eta + 0.00019142082884072178*eta2)*xi2 \
+        + (5.447166261464217e-6 - 0.00003220610095021982*eta + 0.00007974016714984341*eta2)*xi3
+
+    def PhiIntAnsatz(self, Mf, p):
+        """
+        ansatz for the intermediate phase defined by Equation 16 arXiv:1508.07253
+        """
+        # // 1./eta in paper omitted and put in when need in the functions:
+        # // ComputeIMRPhenDPhaseConnectionCoefficients
+        # // IMRPhenDPhase
+        return  p['beta1']*Mf - p['beta3']/(3.*pow_3_of(Mf)) + p['beta2']*log(Mf)
+
+    def DPhiIntAnsatz(self, Mf, p):
+        """
+        First frequency derivative of PhiIntAnsatz
+        (this time with 1./eta explicitly factored in)
+        """
+        return (p['beta1'] + p['beta3']/pow_4_of(Mf) + p['beta2']/Mf) / p['eta']
+
+
+    def DPhiIntTemp(Mf, p):
+        """
+        temporary instance of DPhiIntAnsatz used when computing
+        coefficients to make the phase C(1) continuous between regions.
+        """
+        eta = p['eta']
+        beta1 = p['beta1']
+        beta2 = p['beta2']
+        beta3 = p['beta3']
+        C2Int = p['C2Int']
+
+        return C2Int + (beta1 + beta3/pow_4_of(Mf) + beta2/Mf)/eta
+
+    # ///////////////////////////// Phase: Inspiral functions /////////////////////////////
+    #
+    # // sigma_i i=1,2,3,4 are the phenomenological inspiral coefficients depending on eta and chiPN
+    # // PhiInsAnsatzInt is a souped up TF2 phasing which depends on the sigma_i coefficients
+
+
+    def sigma1Fit(self, p):
+        """
+        sigma 1 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
+
+        return 2096.551999295543 + 1463.7493168261553*eta \
+        + (1312.5493286098522 + 18307.330017082117*eta - 43534.1440746107*eta2)*xi \
+        + (-833.2889543511114 + 32047.31997183187*eta - 108609.45037520859*eta2)*xi2 \
+        + (452.25136398112204 + 8353.439546391714*eta - 44531.3250037322*eta2)*xi3
+
+    def sigma2Fit(self, p):
+        """
+        sigma 2 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
+
+        return -10114.056472621156 - 44631.01109458185*eta \
+        + (-6541.308761668722 - 266959.23419307504*eta + 686328.3229317984*eta2)*xi \
+        + (3405.6372187679685 - 437507.7208209015*eta + 1.6318171307344697e6*eta2)*xi2 \
+        + (-7462.648563007646 - 114585.25177153319*eta + 674402.4689098676*eta2)*xi3
+
+    def sigma3Fit(self, p):
+        """
+        sigma 3 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
+
+        return 22933.658273436497 + 230960.00814979506*eta \
+        + (14961.083974183695 + 1.1940181342318142e6*eta - 3.1042239693052764e6*eta2)*xi \
+        + (-3038.166617199259 + 1.8720322849093592e6*eta - 7.309145012085539e6*eta2)*xi2 \
+        + (42738.22871475411 + 467502.018616601*eta - 3.064853498512499e6*eta2)*xi3
+
+    def sigma4Fit(self, p):
+        """
+        sigma 4 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
+        """
+        eta = p['eta']
+        chi = p['chipn']
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
+
+        return -14621.71522218357 - 377812.8579387104*eta \
+        + (-9608.682631509726 - 1.7108925257214056e6*eta + 4.332924601416521e6*eta2)*xi \
+        + (-22366.683262266528 - 2.5019716386377467e6*eta + 1.0274495902259542e7*eta2)*xi2 \
+        + (-85360.30079034246 - 570025.3441737515*eta + 4.396844346849777e6*eta2)*xi3
+
+
+class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
     """docstring for PhenomDInternals"""
     def __init__(self):
         pass
