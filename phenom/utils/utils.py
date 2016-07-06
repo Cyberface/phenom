@@ -5,6 +5,7 @@ from numpy import sqrt, pi
 # 4.92549102554e-06
 __MTSUN_SI__ = 4.92549102554e-06
 __MSUN_SI__ = 1.9885469549614615e+30
+__MRSUN_SI__ = 1476.6250614046494
 
 def MftoHz(Mf, M):
     """MftoHz(Mf, M)

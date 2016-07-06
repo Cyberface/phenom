@@ -1,7 +1,7 @@
 from __future__ import division
 
 from phenom.waveform.waveform import Waveform
-from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, __MTSUN_SI__, __MSUN_SI__, pow_2_of, pow_3_of, pow_4_of
+from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, __MTSUN_SI__, __MSUN_SI__, __MRSUN_SI__, pow_2_of, pow_3_of, pow_4_of
 from phenom.utils.remnant import fring, fdamp, FinalSpin0815
 from numpy import sqrt, pi, arange, zeros, exp, fabs, log, arctan
 
@@ -1164,6 +1164,9 @@ class PhenomD(Waveform, PhenomDInternals):
         self.p['Mtot'], self.p['eta'] = M_eta_m1_m2(self.p['m1'], self.p['m2'])
         self.p['chipn'] = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
 
+        # Compute the amplitude pre-factor
+        self.p['amp0'] = 2. * sqrt(5. / (64.*pi)) * self.p['Mtot'] * __MRSUN_SI__ * self.p['Mtot'] * __MTSUN_SI__ / self.p['distance']
+
         self.M_sec = self.p['Mtot'] * __MTSUN_SI__ # Conversion factor Hz -> dimensionless frequency
 
         self.define_phenomD_constants()
@@ -1198,7 +1201,7 @@ class PhenomD(Waveform, PhenomDInternals):
         #intermediate amplitude coeffs
         self.ComputeDeltasFromCollocation(self.p, self.amp_prefactors, self.powers_of_pi)
 
-        populate phase phenom coefficient dictionaries
+        # populate phase phenom coefficient dictionaries
         #inspiral PN coefficients
         self.pn = self.SimInspiralTaylorF2AlignedPhasing(self.p)
 
@@ -1224,14 +1227,6 @@ class PhenomD(Waveform, PhenomDInternals):
 
         #compute phase connection coefficients
         self.p['C1Int'], self.p['C2Int'], self.p['C1MRD'], self.p['C2MRD'] = self.ComputeIMRPhenDPhaseConnectionCoefficients(self.p, self.pn, self.phi_prefactors, self.powers_of_pi)
-
-        flist = arange(self.p['f_min'], self.p['f_max'], self.p['delta_f'])
-        amp = zeros(len(flist))
-        phi = zeros(len(flist))
-        for i in range(len(flist)):
-            Mf = flist[i] * self.M_sec
-            self.powers_of_Mf = UsefulPowers(Mf)
-            self.IMRPhenomDGenerateFD(Mf)
 
     def define_phenomD_constants(self):
         """
@@ -1309,7 +1304,7 @@ class PhenomD(Waveform, PhenomDInternals):
         fInsJoin = self.PHI_fJoin_INS
         fMRDJoin = 0.5*p['fRD']
 
-        if (Mf <= fInsJoin):	# Inspiral range
+        if (Mf <= fInsJoin):	# Inspiral rangee
             PhiIns = self.PhiInsAnsatzInt(Mf, p, pn, phi_prefactors, powers_of_Mf, self.powers_of_pi)
             return PhiIns
         elif (Mf >= fMRDJoin):	# MRD range
@@ -1320,13 +1315,30 @@ class PhenomD(Waveform, PhenomDInternals):
             PhiInt = 1.0/p['eta'] * self.PhiIntAnsatz(Mf, p) + p['C1Int'] + p['C2Int'] * Mf
             return PhiInt
 
-    def IMRPhenomDGenerateFD(self, Mf):
+    def generateIMRAmpandPhase(self):
         """
-        generates frequency domain strain"""
-        # amp[i] = self.IMRPhenomDAmplitude(Mf, self.p, self.powers_of_Mf, self.amp_prefactors)
-        # phi[i] = self.IMRPhenomDPhase(Mf, self.p, self.pn, self.powers_of_Mf, self.phi_prefactors)
+        generates frequency series for amplitude and phase
+        amplitude is not scaled by amp0
+        """
+        self.flist_Hz = arange(self.p['f_min'], self.p['f_max'], self.p['delta_f'])
+        self.amp = zeros(len(self.flist_Hz))
+        self.phase = zeros(len(self.flist_Hz))
+        for i in range(len(self.flist_Hz)):
+            Mf = self.flist_Hz[i] * self.M_sec
+            powers_of_Mf = UsefulPowers(Mf)
+            self.amp[i] = self.IMRPhenomDAmplitude(Mf, self.p, powers_of_Mf, self.amp_prefactors)
+            self.phase[i] = self.IMRPhenomDPhase(Mf, self.p, self.pn, powers_of_Mf, self.phi_prefactors)
 
-        pass
+    def IMRPhenomDGenerateFD(self):
+        """
+        generates frequency domain strain
+        calls generateIMRAmpandPhase() to set
+        self.amp and self.phase
+        Then combines as
+        self.htilde = self.p['amp0'] * self.amp * exp(-1.j * self.phase)"""
+        self.generateIMRAmpandPhase()
+        self.htilde = self.p['amp0'] * self.amp * exp(-1.j * self.phase)
+
 
     def IMRPhenomDGenerateFDSingleFrequencyPoint(self, Mf, p):
         """
