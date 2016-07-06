@@ -1018,11 +1018,13 @@ class PhenomDInternalsPhase(object):
         return phasing
 
 
-    def DPhiInsAnsatzInt(self, Mf, powers_of_pi, p, pn):
+    def DPhiInsAnsatzInt(self, Mf, powers_of_pi, prefactors, p, pn):
         """
         input
         Mf : dimensionless frequency
         powers_of_pi : instance of UsefulPowers
+        prefactors : dict
+                output from init_phi_ins_prefactors function
         p : dict
         pn : dict
         First frequency derivative of PhiInsAnsatzInt
@@ -1077,11 +1079,11 @@ class PhenomD(Waveform, PhenomDInternals):
     # Use the constructor from the Waveform Class
     # def __init__(self, **p):
     #     super(PhenomD, self).__init__(p)
-    def __init__(self, m1=10. * __MSUN_SI__, m2=10. * __MSUN_SI__, chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6, fRef=0., phiRef=0.):
+    def __init__(self, m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6, fRef=0., phiRef=0.):
         """
         input:
-        m1 (SI)
-        m2 (SI)
+        m1 (Msun)
+        m2 (Msun)
         chi1z (dimensionless)
         chi2z (dimensionless)
         f_min (Hz)
@@ -1098,8 +1100,8 @@ class PhenomD(Waveform, PhenomDInternals):
 
         # put inputs into a dictionary
         self.p             = {}
-        self.p['m1_SI']    = m1
-        self.p['m2_SI']    = m2
+        self.p['m1']       = m1
+        self.p['m2']       = m2
         self.p['chi1z']    = chi1z
         self.p['chi2z']    = chi2z
         self.p['f_min']    = f_min
@@ -1108,10 +1110,6 @@ class PhenomD(Waveform, PhenomDInternals):
         self.p['distance'] = distance
         self.p['fRef']     = fRef
         self.p['phiRef']   = phiRef
-
-        # external: SI; internal: solar masses
-        self.p['m1'] = self.p['m1_SI'] / __MSUN_SI__
-        self.p['m2'] = self.p['m2_SI'] / __MSUN_SI__
 
         self.p['Mtot'], self.p['eta'] = M_eta_m1_m2(self.p['m1'], self.p['m2'])
         self.p['chipn'] = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])

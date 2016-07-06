@@ -1,6 +1,6 @@
 import phenom
 from phenom.utils.utils import __MSUN_SI__ as MSUN
-ph = phenom.PhenomD(m1=10 * MSUN, m2=50 * MSUN, chi1z=0.3, chi2z=0.2, f_min=10)
+ph = phenom.PhenomD(m1=10., m2=50., chi1z=0.3, chi2z=0.2, f_min=10)
 
 for i in range(len(ph.pn)):
     print str(ph.pn.keys()[i]) + " = " + str(ph.pn.values()[i])
