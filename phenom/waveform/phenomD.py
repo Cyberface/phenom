@@ -937,9 +937,8 @@ class PhenomDInternalsPhase(object):
         pfa['v[3]'] += 188*SL/3 + 25*dSigmaL
 
         # finally we multiply every term by the Newtonian term
-        # note can only loop over because pfa is an OrderedDict
-        for i in range(len(pfa)):
-            pfa[pfa.keys()[i]] = pfa.values()[i] * pfaN
+        for key in pfa.keys():
+            pfa[key] *= pfaN
 
         return pfa
 
