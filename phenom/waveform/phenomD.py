@@ -1,9 +1,9 @@
 from __future__ import division
 
 from phenom.waveform.waveform import Waveform
-from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, __MTSUN_SI__, __MSUN_SI__, pow_2_of, pow_3_of
+from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, __MTSUN_SI__, __MSUN_SI__, pow_2_of, pow_3_of, pow_4_of
 from phenom.utils.remnant import fring, fdamp, FinalSpin0815
-from numpy import sqrt, pi, arange, zeros, exp, fabs, log
+from numpy import sqrt, pi, arange, zeros, exp, fabs, log, arctan
 
 class PhenomDInternalsAmplitude(object):
     """docstring for PhenomDInternalsAmplitude"""
@@ -649,7 +649,7 @@ class PhenomDInternalsPhase(object):
         return -(p['alpha2']/Mf) \
         + (4.0/3.0) * (p['alpha3'] * fpow0_75) \
         + p['alpha1'] * Mf \
-        + p['alpha4'] * atan((Mf - p['alpha5'] * p['fRD']) / p['fDM'])
+        + p['alpha4'] * arctan((Mf - p['alpha5'] * p['fRD']) / p['fDM'])
 
     def DPhiMRD(self, Mf, p):
         """
@@ -730,7 +730,7 @@ class PhenomDInternalsPhase(object):
         """
         return (p['beta1'] + p['beta3']/pow_4_of(Mf) + p['beta2']/Mf) / p['eta']
 
-    def DPhiIntTemp(Mf, p):
+    def DPhiIntTemp(self, Mf, p, C2Int):
         """
         temporary instance of DPhiIntAnsatz used when computing
         coefficients to make the phase C(1) continuous between regions.
@@ -739,7 +739,6 @@ class PhenomDInternalsPhase(object):
         beta1 = p['beta1']
         beta2 = p['beta2']
         beta3 = p['beta3']
-        C2Int = p['C2Int']
 
         return C2Int + (beta1 + beta3/pow_4_of(Mf) + beta2/Mf)/eta
 
@@ -978,7 +977,7 @@ class PhenomDInternalsPhase(object):
 
         return prefactors
 
-    def PhiInsAnsatzInt(self, Mf, powers_of_Mf, prefactors, p, pn):
+    def PhiInsAnsatzInt(self, Mf, p, pn, prefactors, powers_of_Mf, powers_of_pi):
         """
         input
         Mf : dimensionless frequency
@@ -1036,7 +1035,7 @@ class PhenomDInternalsPhase(object):
         Pi = pi
 
         # // Assemble PN phasing series
-        v = cbrt(Pi*Mf)
+        v = (Pi*Mf) ** (1./3.)
         logv = log(v)
         v2 = v * v
         v3 = v * v2
@@ -1068,6 +1067,57 @@ class PhenomDInternalsPhase(object):
         ) / p['eta']
 
         return Dphasing
+
+    def ComputeIMRPhenDPhaseConnectionCoefficients(self, p, pn, prefactors, powers_of_pi):
+        """
+        p : dict
+        pn : dict
+        prefactors : dict
+                output from init_phi_ins_prefactors function
+
+        returns
+            C1Int, C2Int, C1MRD, C2MRD
+
+        This function aligns the three phase parts (inspiral, intermediate and merger-rindown)
+        such that they are c^1 continuous at the transition frequencies
+        Defined in VIII. Full IMR Waveforms arXiv:1508.07253
+        """
+        eta = p['eta']
+
+        # // Transition frequencies
+        # // Defined in VIII. Full IMR Waveforms arXiv:1508.07253
+        p['fInsJoin']=self.PHI_fJoin_INS
+        p['fMRDJoin']=0.5*p['fRD']
+
+        # // Compute C1Int and C2Int coeffs
+        # // Equations to solve for to get C(1) continuous join
+        # // PhiIns (f)  =   PhiInt (f) + C1Int + C2Int f
+        # // Joining at fInsJoin
+        # // PhiIns (fInsJoin)  =   PhiInt (fInsJoin) + C1Int + C2Int fInsJoin
+        # // PhiIns'(fInsJoin)  =   PhiInt'(fInsJoin) + C2Int
+
+        DPhiIns = self.DPhiInsAnsatzInt(p['fInsJoin'], powers_of_pi, prefactors, p, pn)
+        DPhiInt = self.DPhiIntAnsatz(p['fInsJoin'], p)
+        C2Int = DPhiIns - DPhiInt
+
+        powers_of_fInsJoin = UsefulPowers(p['fInsJoin'])
+        C1Int = self.PhiInsAnsatzInt(p['fInsJoin'], p, pn, prefactors, powers_of_fInsJoin, powers_of_pi) \
+        - 1.0/eta * self.PhiIntAnsatz(p['fInsJoin'], p) - C2Int * p['fInsJoin']
+
+        # // Compute C1MRD and C2MRD coeffs
+        # // Equations to solve for to get C(1) continuous join
+        # // PhiInsInt (f)  =   PhiMRD (f) + C1MRD + C2MRD f
+        # // Joining at fMRDJoin
+        # // Where \[Phi]InsInt(f) is the \[Phi]Ins+\[Phi]Int joined function
+        # // PhiInsInt (fMRDJoin)  =   PhiMRD (fMRDJoin) + C1MRD + C2MRD fMRDJoin
+        # // PhiInsInt'(fMRDJoin)  =   PhiMRD'(fMRDJoin) + C2MRD
+        # // temporary Intermediate Phase function to Join up the Merger-Ringdown
+        PhiIntTempVal = 1.0/eta * self.PhiIntAnsatz(p['fMRDJoin'], p) + C1Int + C2Int*p['fMRDJoin']
+        DPhiIntTempVal = self.DPhiIntTemp(p['fMRDJoin'], p, C2Int)
+        DPhiMRDVal = self.DPhiMRD(p['fMRDJoin'], p)
+        C2MRD = DPhiIntTempVal - DPhiMRDVal
+        C1MRD = PhiIntTempVal - 1.0/eta * self.PhiMRDAnsatzInt(p['fMRDJoin'], p) - C2MRD*p['fMRDJoin']
+        return C1Int, C2Int, C1MRD, C2MRD
 
 class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
     """docstring for PhenomDInternals"""
@@ -1177,6 +1227,9 @@ class PhenomD(Waveform, PhenomDInternals):
         self.p['alpha4'] = self.alpha4Fit(self.p)
         self.p['alpha5'] = self.alpha5Fit(self.p)
 
+        #compute phase connection coefficients
+        self.p['C1Int'], self.p['C2Int'], self.p['C1MRD'], self.p['C2MRD'] = self.ComputeIMRPhenDPhaseConnectionCoefficients(self.p, self.pn, self.phi_prefactors, self.powers_of_pi)
+
         print "self.AmpMRDAnsatz(0.088, self.p) = ",self.AmpMRDAnsatz(0.088, self.p)
         print "self.DAmpMRDAnsatz(0.088, self.p) = ",self.DAmpMRDAnsatz(0.088, self.p)
 
@@ -1259,9 +1312,27 @@ class PhenomD(Waveform, PhenomDInternals):
             return AmpInt
 
     def IMRPhenomDPhase(self, Mf, p, pn, powers_of_Mf, phi_prefactors):
-        #inpsiral
-        # PhiInsAnsatzInt(self, Mf, powers_of_Mf, prefactors, p, pn):
-        pass
+        """
+        This function computes the IMR phase given phenom coefficients.
+        Defined in VIII. Full IMR Waveforms arXiv:1508.07253
+        """
+        # Defined in VIII. Full IMR Waveforms arXiv:1508.07253
+        # The inspiral, intermendiate and merger-ringdown phase parts
+
+        # split the calculation to just 1 of 3 possible mutually exclusive ranges
+        p['fInsJoin'] = self.PHI_fJoin_INS
+        p['fMRDJoin'] = 0.5*p['fRD']
+
+        if (Mf <= p['fInsJoin']):	# Inspiral range
+            PhiIns = self.PhiInsAnsatzInt(Mf, p, pn, phi_prefactors, powers_of_Mf, self.powers_of_pi)
+            return PhiIns
+        elif (Mf >= p['fMRDJoin']):	# MRD range
+            PhiMRD = 1.0/p['eta'] * self.PhiMRDAnsatzInt(Mf, p) + p['C1MRD'] + p['C2MRD'] * Mf
+            return PhiMRD
+        else:
+            #	Intermediate range
+            PhiInt = 1.0/p['eta'] * self.PhiIntAnsatz(Mf, p) + p['C1Int'] + p['C2Int'] * Mf
+            return PhiInt
 
     def IMRPhenomDGenerateFD(self, Mf):
         """
