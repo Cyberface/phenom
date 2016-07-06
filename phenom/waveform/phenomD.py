@@ -1179,9 +1179,6 @@ class PhenomD(Waveform, PhenomDInternals):
         self.p['fRD']     = fring(self.p['eta'], self.p['chi1z'], self.p['chi2z'], self.p['finspin'])
         self.p['fDM']     = fdamp(self.p['eta'], self.p['chi1z'], self.p['chi2z'], self.p['finspin'])
 
-
-        print "self.rho3_fun(self.p) = ", self.rho3_fun(self.p)
-
         #inspiral amplitude coeffs
         self.p['rho1'] = self.rho1_fun(self.p)
         self.p['rho2'] = self.rho2_fun(self.p)
@@ -1190,8 +1187,6 @@ class PhenomD(Waveform, PhenomDInternals):
         #inspiral amplitude prefactors
         self.amp_prefactors = super(PhenomDInternals, self).init_amp_ins_prefactors(self.p, self.powers_of_pi)
 
-        # print self.AmpInsAnsatz(0.08, UsefulPowers(0.08), self.amp_prefactors)
-        # print self.DAmpInsAnsatz(0.08, self.p, self.powers_of_pi, UsefulPowers(0.08))
         #merger-ringdown amplitude coeffs
         self.p['gamma1'] = self.gamma1_fun(self.p)
         self.p['gamma2'] = self.gamma2_fun(self.p)
@@ -1203,7 +1198,7 @@ class PhenomD(Waveform, PhenomDInternals):
         #intermediate amplitude coeffs
         self.ComputeDeltasFromCollocation(self.p, self.amp_prefactors, self.powers_of_pi)
 
-        #TODO: populate phase phenom coefficient dictionaries
+        populate phase phenom coefficient dictionaries
         #inspiral PN coefficients
         self.pn = self.SimInspiralTaylorF2AlignedPhasing(self.p)
 
@@ -1229,15 +1224,6 @@ class PhenomD(Waveform, PhenomDInternals):
 
         #compute phase connection coefficients
         self.p['C1Int'], self.p['C2Int'], self.p['C1MRD'], self.p['C2MRD'] = self.ComputeIMRPhenDPhaseConnectionCoefficients(self.p, self.pn, self.phi_prefactors, self.powers_of_pi)
-
-        print "self.AmpMRDAnsatz(0.088, self.p) = ",self.AmpMRDAnsatz(0.088, self.p)
-        print "self.DAmpMRDAnsatz(0.088, self.p) = ",self.DAmpMRDAnsatz(0.088, self.p)
-
-
-        # print super(PhenomD, self).rho3_fun(self.p['eta'], self.p['chipn'])
-        # print super(PhenomDInternals, self).rho3_fun(self.p['eta'], self.p['chipn'])
-        # super(PhenomD, self).interal()
-        # super(PhenomDInternals, self).interal()
 
         flist = arange(self.p['f_min'], self.p['f_max'], self.p['delta_f'])
         amp = zeros(len(flist))
@@ -1294,16 +1280,16 @@ class PhenomD(Waveform, PhenomDInternals):
         # The inspiral, intermediate and merger-ringdown amplitude parts
 
         # Transition frequencies
-        p['fInsJoin'] = self.AMP_fJoin_INS
-        p['fMRDJoin'] = p['fmaxCalc']
+        fInsJoin = self.AMP_fJoin_INS
+        fMRDJoin = p['fmaxCalc']
 
         AmpPreFac = amp_prefactors['amp0'] / powers_of_Mf.seven_sixths
         # split the calculation to just 1 of 3 possible mutually exclusive ranges
         # this effectively implements a step function transition function
-        if (Mf <= p['fInsJoin']):	# Inspiral range
+        if (Mf <= fInsJoin):	# Inspiral range
             AmpIns = AmpPreFac * self.AmpInsAnsatz(Mf, powers_of_Mf, amp_prefactors)
             return AmpIns
-        elif (Mf >= p['fMRDJoin']):	# MRD range
+        elif (Mf >= fMRDJoin):	# MRD range
             AmpMRD = AmpPreFac * self.AmpMRDAnsatz(Mf, p)
             return AmpMRD
         else:
@@ -1320,13 +1306,13 @@ class PhenomD(Waveform, PhenomDInternals):
         # The inspiral, intermendiate and merger-ringdown phase parts
 
         # split the calculation to just 1 of 3 possible mutually exclusive ranges
-        p['fInsJoin'] = self.PHI_fJoin_INS
-        p['fMRDJoin'] = 0.5*p['fRD']
+        fInsJoin = self.PHI_fJoin_INS
+        fMRDJoin = 0.5*p['fRD']
 
-        if (Mf <= p['fInsJoin']):	# Inspiral range
+        if (Mf <= fInsJoin):	# Inspiral range
             PhiIns = self.PhiInsAnsatzInt(Mf, p, pn, phi_prefactors, powers_of_Mf, self.powers_of_pi)
             return PhiIns
-        elif (Mf >= p['fMRDJoin']):	# MRD range
+        elif (Mf >= fMRDJoin):	# MRD range
             PhiMRD = 1.0/p['eta'] * self.PhiMRDAnsatzInt(Mf, p) + p['C1MRD'] + p['C2MRD'] * Mf
             return PhiMRD
         else:
