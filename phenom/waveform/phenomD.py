@@ -942,6 +942,41 @@ class PhenomDInternalsPhase(object):
 
         return pfa
 
+    def init_phi_ins_prefactors(self, p, pn, powers_of_pi):
+        """helper function for phase
+        p : dict
+        pn : dict of PN coefficients from SimInspiralTaylorF2AlignedPhasing
+        powers_of_pi : instant of UsefulPowers class
+        output:
+        output a dictionary called prefactors"""
+
+        sigma1 = p['sigma1']
+        sigma2 = p['sigma2']
+        sigma3 = p['sigma3']
+        sigma4 = p['sigma4']
+        Pi = pi
+        LAL_PI_4 = pi / 4.
+
+        # // PN phasing series
+        prefactors['initial_phasing'] = pn['v[5]'] - LAL_PI_4
+        prefactors['two_thirds'] = pn['v[7]'] * powers_of_pi.two_thirds
+        prefactors['third'] = pn['v[6]'] * powers_of_pi.third
+        prefactors['third_with_logv'] = pn['vlogv[6]'] * powers_of_pi.third
+        prefactors['logv'] = pn['vlogv[5]']
+        prefactors['minus_third'] = pn['v[4]'] / powers_of_pi.third
+        prefactors['minus_two_thirds'] = pn['v[3]'] / powers_of_pi.two_thirds
+        prefactors['minus_one'] = pn['v[2]'] / Pi
+        prefactors['minus_five_thirds'] = pn['v[0]'] / powers_of_pi.five_thirds #// * v^0
+
+        # // higher order terms that were calibrated for PhenomD
+        prefactors['one'] = sigma1
+        prefactors['four_thirds'] = sigma2 * 3.0/4.0
+        prefactors['five_thirds'] = sigma3 * 3.0/5.0
+        prefactors['two'] = sigma4 / 2.0
+
+        return prefactors
+
+
 
 
 class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
@@ -1035,8 +1070,16 @@ class PhenomD(Waveform, PhenomDInternals):
         #TODO: populate phase phenom coefficient dictionaries
         #inspiral PN coefficients
         self.pn = self.SimInspiralTaylorF2AlignedPhasing(self.p)
+
         #inspiral phase coeffs
+        self.p['sigma1'] = self.sigma1_fun(self.p)
+        self.p['sigma2'] = self.sigma2_fun(self.p)
+        self.p['sigma3'] = self.sigma3_fun(self.p)
+        self.p['sigma4'] = self.sigma4_fun(self.p)
+
         #inspiral phase prefactors
+        self.phi_prefactors = self.init_phi_ins_prefactors(self.p, self.pn, self.powers_of_pi)
+
         #intermediate phase coeffs
         #merger-ringdown phase coeffs
 
