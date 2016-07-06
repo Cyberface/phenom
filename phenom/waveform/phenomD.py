@@ -950,6 +950,8 @@ class PhenomDInternalsPhase(object):
         output:
         output a dictionary called prefactors"""
 
+        prefactors = {}
+
         sigma1 = p['sigma1']
         sigma2 = p['sigma2']
         sigma3 = p['sigma3']
@@ -1072,10 +1074,10 @@ class PhenomD(Waveform, PhenomDInternals):
         self.pn = self.SimInspiralTaylorF2AlignedPhasing(self.p)
 
         #inspiral phase coeffs
-        self.p['sigma1'] = self.sigma1_fun(self.p)
-        self.p['sigma2'] = self.sigma2_fun(self.p)
-        self.p['sigma3'] = self.sigma3_fun(self.p)
-        self.p['sigma4'] = self.sigma4_fun(self.p)
+        self.p['sigma1'] = self.sigma1Fit(self.p)
+        self.p['sigma2'] = self.sigma2Fit(self.p)
+        self.p['sigma3'] = self.sigma3Fit(self.p)
+        self.p['sigma4'] = self.sigma4Fit(self.p)
 
         #inspiral phase prefactors
         self.phi_prefactors = self.init_phi_ins_prefactors(self.p, self.pn, self.powers_of_pi)
