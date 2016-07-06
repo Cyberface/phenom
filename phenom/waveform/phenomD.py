@@ -978,8 +978,94 @@ class PhenomDInternalsPhase(object):
 
         return prefactors
 
+    def PhiInsAnsatzInt(self, Mf, powers_of_Mf, prefactors, p, pn):
+        """
+        input
+        Mf : dimensionless frequency
+        powers_of_Mf : instance of UsefulPowers
+        prefactors : dict
+                output from init_phi_ins_prefactors function
+        p : dict
+        pn : dict
+        Ansatz for the inspiral phase.
+        We call the LAL TF2 coefficients here.
+        The exact values of the coefficients used are given
+        as comments in the top of this file
+        Defined by Equation 27 and 28 arXiv:1508.07253
+        """
+
+        # // Assemble PN phasing series
+        v = powers_of_Mf.third * powers_of_pi.third
+        logv = log(v)
+
+        phasing = prefactors['initial_phasing']
+
+        phasing += prefactors['two_thirds']	* powers_of_Mf.two_thirds
+        phasing += prefactors['third'] * powers_of_Mf.third
+        phasing += prefactors['third_with_logv'] * logv * powers_of_Mf.third
+        phasing += prefactors['logv'] * logv
+        phasing += prefactors['minus_third'] / powers_of_Mf.third
+        phasing += prefactors['minus_two_thirds'] / powers_of_Mf.two_thirds
+        phasing += prefactors['minus_one'] / Mf
+        phasing += prefactors['minus_five_thirds'] / powers_of_Mf.five_thirds #// * v^0
+
+        # // Now add higher order terms that were calibrated for PhenomD
+        phasing += ( prefactors['one'] * Mf + prefactors['four_thirds'] * powers_of_Mf.four_thirds \
+        		   + prefactors['five_thirds'] * powers_of_Mf.five_thirds \
+        		   + prefactors['two'] * powers_of_Mf.two \
+        		 ) / p['eta']
+
+        return phasing
 
 
+    def DPhiInsAnsatzInt(self, Mf, powers_of_pi, p, pn):
+        """
+        input
+        Mf : dimensionless frequency
+        powers_of_pi : instance of UsefulPowers
+        p : dict
+        pn : dict
+        First frequency derivative of PhiInsAnsatzInt
+        """
+        sigma1 = p['sigma1']
+        sigma2 = p['sigma2']
+        sigma3 = p['sigma3']
+        sigma4 = p['sigma4']
+        Pi = pi
+
+        # // Assemble PN phasing series
+        v = cbrt(Pi*Mf)
+        logv = log(v)
+        v2 = v * v
+        v3 = v * v2
+        v4 = v * v3
+        v5 = v * v4
+        v6 = v * v5
+        v7 = v * v6
+        v8 = v * v7
+
+        # // Apply the correct prefactors to LAL phase coefficients to get the
+        # // phase derivative dphi / dMf = dphi/dv * dv/dMf
+        Dphasing = 0.0
+        Dphasing += +2.0 * pn['v[7]'] * v7
+        Dphasing += (pn['v[6]'] + pn['vlogv[6]'] * (1.0 + logv)) * v6
+        Dphasing += pn['vlogv[5]'] * v5
+        Dphasing += -1.0 * pn['v[4]'] * v4
+        Dphasing += -2.0 * pn['v[3]'] * v3
+        Dphasing += -3.0 * pn['v[2]'] * v2
+        Dphasing += -4.0 * pn['v[1]'] * v
+        Dphasing += -5.0 * pn['v[0]']
+        Dphasing /= v8 * 3.0/Pi
+
+        # // Now add higher order terms that were calibrated for PhenomD
+        Dphasing += ( \
+          sigma1 \
+        + sigma2 * v / powers_of_pi.third \
+        + sigma3 * v2 / powers_of_pi.two_thirds \
+        + (sigma4/Pi) * v3 \
+        ) / p['eta']
+
+        return Dphasing
 
 class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
     """docstring for PhenomDInternals"""
@@ -1083,8 +1169,15 @@ class PhenomD(Waveform, PhenomDInternals):
         self.phi_prefactors = self.init_phi_ins_prefactors(self.p, self.pn, self.powers_of_pi)
 
         #intermediate phase coeffs
+        self.p['beta1'] = self.beta1Fit(self.p)
+        self.p['beta2'] = self.beta2Fit(self.p)
+        self.p['beta3'] = self.beta3Fit(self.p)
         #merger-ringdown phase coeffs
-
+        self.p['alpha1'] = self.alpha1Fit(self.p)
+        self.p['alpha2'] = self.alpha2Fit(self.p)
+        self.p['alpha3'] = self.alpha3Fit(self.p)
+        self.p['alpha4'] = self.alpha4Fit(self.p)
+        self.p['alpha5'] = self.alpha5Fit(self.p)
 
         print "self.AmpMRDAnsatz(0.088, self.p) = ",self.AmpMRDAnsatz(0.088, self.p)
         print "self.DAmpMRDAnsatz(0.088, self.p) = ",self.DAmpMRDAnsatz(0.088, self.p)
@@ -1168,6 +1261,8 @@ class PhenomD(Waveform, PhenomDInternals):
             return AmpInt
 
     def IMRPhenomDPhase(self, Mf, p, pn, powers_of_Mf, phi_prefactors):
+        #inpsiral
+        # PhiInsAnsatzInt(self, Mf, powers_of_Mf, prefactors, p, pn):
         pass
 
     def IMRPhenomDGenerateFD(self, Mf):
