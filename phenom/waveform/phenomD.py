@@ -577,10 +577,10 @@ class PhenomDInternalsPhase(object):
         """
         eta = p['eta']
         chi = p['chipn']
-        double xi = -1 + chi
-        double xi2 = xi*xi
-        double xi3 = xi2*xi
-        double eta2 = eta*eta
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
 
         return -0.07020209449091723 - 0.16269798450687084*eta \
         + (-0.1872514685185499 + 1.138313650449945*eta - 2.8334196304430046*eta2)*xi \
@@ -593,10 +593,10 @@ class PhenomDInternalsPhase(object):
         """
         eta = p['eta']
         chi = p['chipn']
-        double xi = -1 + chi
-        double xi2 = xi*xi
-        double xi3 = xi2*xi
-        double eta2 = eta*eta
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
 
         return 9.5988072383479 - 397.05438595557433*eta \
         + (16.202126189517813 - 1574.8286986717037*eta + 3600.3410843831093*eta2)*xi \
@@ -609,10 +609,10 @@ class PhenomDInternalsPhase(object):
         """
         eta = p['eta']
         chi = p['chipn']
-        double xi = -1 + chi
-        double xi2 = xi*xi
-        double xi3 = xi2*xi
-        double eta2 = eta*eta
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
 
         return -0.02989487384493607 + 1.4022106448583738*eta \
         + (-0.07356049468633846 + 0.8337006542278661*eta + 0.2240008282397391*eta2)*xi \
@@ -625,10 +625,10 @@ class PhenomDInternalsPhase(object):
         """
         eta = p['eta']
         chi = p['chipn']
-        double xi = -1 + chi
-        double xi2 = xi*xi
-        double xi3 = xi2*xi
-        double eta2 = eta*eta
+        xi = -1 + chi
+        xi2 = xi*xi
+        xi3 = xi2*xi
+        eta2 = eta*eta
 
         return 0.9974408278363099 - 0.007884449714907203*eta \
         + (-0.059046901195591035 + 1.3958712396764088*eta - 4.516631601676276*eta2)*xi \
