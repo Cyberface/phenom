@@ -1,7 +1,9 @@
+from __future__ import division
+
 from phenom.waveform.waveform import Waveform
 from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, __MTSUN_SI__, __MSUN_SI__, pow_2_of, pow_3_of
 from phenom.utils.remnant import fring, fdamp, FinalSpin0815
-from numpy import sqrt, pi, arange, zeros, exp, fabs
+from numpy import sqrt, pi, arange, zeros, exp, fabs, log
 
 class PhenomDInternalsAmplitude(object):
     """docstring for PhenomDInternalsAmplitude"""
@@ -728,7 +730,6 @@ class PhenomDInternalsPhase(object):
         """
         return (p['beta1'] + p['beta3']/pow_4_of(Mf) + p['beta2']/Mf) / p['eta']
 
-
     def DPhiIntTemp(Mf, p):
         """
         temporary instance of DPhiIntAnsatz used when computing
@@ -811,6 +812,137 @@ class PhenomDInternalsPhase(object):
         + (-9608.682631509726 - 1.7108925257214056e6*eta + 4.332924601416521e6*eta2)*xi \
         + (-22366.683262266528 - 2.5019716386377467e6*eta + 1.0274495902259542e7*eta2)*xi2 \
         + (-85360.30079034246 - 570025.3441737515*eta + 4.396844346849777e6*eta2)*xi3
+
+
+
+    def SimInspiralTaylorF2AlignedPhasing(self, p):
+        """
+        input
+            p : dict
+        output - pn coefficient dictionary
+            pfa : dict
+            pfa['N'],
+            pfa['v[0]'],
+            pfa['v[2]'],
+            pfa['v[3]'],
+            pfa['v[4]'],
+            pfa['v[5]'],
+            pfa['vlogv[5]'],
+            pfa['v[6]'],
+            pfa['v[6]'],
+            pfa['vlogv[6]'],
+            pfa['v[7]']
+
+        SimInspiralTaylorF2AlignedPhasing
+        This code is taken from the top LALSimIMRPhenomD_internals.c
+        It implements the, then currrent, state of the PN calculations in
+        LAL. After PhenomD was constructed the 3PN spin-spin term
+        was added to LAL. This implementation does NOT use this term.
+        This implementation + 3PN spin-spin term should equate to LAL (07/06/2016)
+
+         - original text from LALSimIMRPhenomD_internals.c:
+        ''This waveform uses the TaylorF2 coefficients for it's inspiral phase augmented
+        by higher order phenomenological terms tuned to SEOBv2-Hybrid waveforms.
+        Below are lines copied from LALSimInspiralPNCoefficients.c which are the TaylorF2
+        phase coefficients we have used.
+        We document them here in case changes to that file changes the behaviour
+        of this waveform.''
+        """
+        # define dictionary to store PN coefficients
+        from collections import OrderedDict
+        # pfa = {}
+        pfa = OrderedDict()
+
+        m1 = p['m1']
+        m2 = p['m2']
+        chi1L = p['chi1z']
+        chi2L = p['chi2z']
+        mtot = p['Mtot']
+        eta = p['eta']
+        d = (m1 - m2) / (m1 + m2)
+        m1M = m1/mtot
+        m2M = m2/mtot
+
+        chi1sq = chi1L * chi1L
+        chi2sq = chi2L * chi2L
+        chi1dotchi2 = chi1L * chi2L
+
+        LAL_PI = pi
+        LAL_GAMMA = 0.5772156649015329
+        #hardcode tidal deformation to correspond to BHs i.e. unity
+        qm_def1 = 1.
+        qm_def2 = 1.
+
+        # // Use the spin-orbit variables from arXiv:1303.7412, Eq. 3.9
+        # // We write dSigmaL for their (\delta m/m) * \Sigma_\ell
+        # // There's a division by mtotal^2 in both the energy and flux terms
+        # // We just absorb the division by mtotal^2 into SL and dSigmaL
+        SL = m1M * m1M * chi1L + m2M * m2M * chi2L
+        dSigmaL = d * (m2M * chi2L - m1M * chi1L)
+        pfaN = 3/(128 * eta)
+        # //Non-spin phasing terms - see arXiv:0907.0700, Eq. 3.18
+        pfa['v[0]'] = 1
+        pfa['v[1]'] = 0
+        pfa['v[2]'] = 5*(743/84 + 11 * eta)/9
+        pfa['v[3]'] = -16*LAL_PI
+        pfa['v[4]'] = 5*(3058.673/7.056 + 5429/7 * eta \
+                         + 617 * eta*eta)/72
+        pfa['v[5]'] = 5/9 * (7729/84 - 13 * eta) * LAL_PI
+        pfa['vlogv[5]'] = 5/3 * (7729/84 - 13 * eta) * LAL_PI
+        pfa['v[6]'] = (11583.231236531/4.694215680 \
+                         - 640/3 * LAL_PI * LAL_PI - 6848/21*LAL_GAMMA) \
+                     + eta * (-15737.765635/3.048192 \
+                         + 2255./12. * LAL_PI * LAL_PI) \
+                     + eta*eta * 76055/1728 \
+                     - eta*eta*eta * 127825/1296
+        pfa['v[6]'] += (-6848/21)*log(4.)
+        pfa['vlogv[6]'] = -6848/21
+        pfa['v[7]'] = LAL_PI * ( 77096675/254016 \
+                         + 378515/1512 * eta - 74045/756 * eta*eta)
+
+
+        # /* Compute 2.0PN SS, QM, and self-spin */
+        # // See Eq. (6.24) in arXiv:0810.5336
+        # // 9b,c,d in arXiv:astro-ph/0504538
+        pn_sigma = eta * (721/48*chi1L*chi2L - 247/48*chi1dotchi2)
+        pn_sigma += (720*qm_def1 - 1)/96.0 * m1M * m1M * chi1L * chi1L
+        pn_sigma += (720*qm_def2 - 1)/96.0 * m2M * m2M * chi2L * chi2L
+        pn_sigma -= (240*qm_def1 - 7)/96.0 * m1M * m1M * chi1sq
+        pn_sigma -= (240*qm_def2 - 7)/96.0 * m2M * m2M * chi2sq
+
+        # 3PN spin-spin term below as this is in LAL's TaylorF2 implementation
+        # was not available when PhenomD was tuned.
+        # so is not used
+        # pn_ss3 =  (326.75/1.12 + 557.5/1.8*eta)*eta*chi1L*chi2L
+        # pn_ss3 += ((4703.5/8.4+2935/6.*m1M-120.*m1M*m1M)*qm_def1 + (-4108.25/6.72-108.5/1.2*m1M+125.5/3.6*m1M*m1M)) *m1M*m1M * chi1sq
+        # pn_ss3 += ((4703.5/8.4+2935./6.*m2M-120.*m2M*m2M)*qm_def2 + (-4108.25/6.72-108.5/1.2*m2M+125.5/3.6*m2M*m2M)) *m2M*m2M * chi2sq
+
+        # // Spin-orbit terms - can be derived from arXiv:1303.7412, Eq. 3.15-16
+        pn_gamma = (554345/1134 + 110*eta/9)*SL + (13915/84 - 10*eta/3.)*dSigmaL
+        # case LAL_SIM_INSPIRAL_SPIN_ORDER_35PN
+        pfa['v[7]'] += (-8980424995/762048 + 6586595*eta/756 \
+        - 305*eta*eta/36)*SL - (170978035/48384 - 2876425*eta/672 - 4735*eta*eta/144) * dSigmaL
+        # case LAL_SIM_INSPIRAL_SPIN_ORDER_3PN:
+        # 3PN spin-spin term below as this is in LAL's TaylorF2 implementation
+        # was not available when PhenomD was tuned.
+        # so is not used.
+        # pfa['v[6]'] += LAL_PI * (3760*SL + 1490*dSigmaL)/3 + pn_ss3
+        pfa['v[6]'] += LAL_PI * (3760*SL + 1490*dSigmaL)/3
+        # case LAL_SIM_INSPIRAL_SPIN_ORDER_25PN:
+        pfa['v[5]'] += -1 * pn_gamma
+        pfa['vlogv[5]'] += -3 * pn_gamma
+        # case LAL_SIM_INSPIRAL_SPIN_ORDER_2PN:
+        pfa['v[4]'] += -10 * pn_sigma
+        # case LAL_SIM_INSPIRAL_SPIN_ORDER_15PN:
+        pfa['v[3]'] += 188*SL/3 + 25*dSigmaL
+
+        # finally we multiply every term by the Newtonian term
+        # note can only loop over because pfa is an OrderedDict
+        for i in range(len(pfa)):
+            pfa[pfa.keys()[i]] = pfa.values()[i] * pfaN
+
+        return pfa
+
 
 
 class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
@@ -902,6 +1034,8 @@ class PhenomD(Waveform, PhenomDInternals):
         self.ComputeDeltasFromCollocation(self.p, self.amp_prefactors, self.powers_of_pi)
 
         #TODO: populate phase phenom coefficient dictionaries
+        #inspiral PN coefficients
+        self.pn = self.SimInspiralTaylorF2AlignedPhasing(self.p)
         #inspiral phase coeffs
         #inspiral phase prefactors
         #intermediate phase coeffs
