@@ -1150,16 +1150,16 @@ class PhenomD(Waveform, PhenomDInternals):
 
         # put inputs into a dictionary
         self.p             = {}
-        self.p['m1']       = m1
-        self.p['m2']       = m2
-        self.p['chi1z']    = chi1z
-        self.p['chi2z']    = chi2z
-        self.p['f_min']    = f_min
-        self.p['f_max']    = f_max
-        self.p['delta_f']  = delta_f
-        self.p['distance'] = distance
-        self.p['fRef']     = fRef
-        self.p['phiRef']   = phiRef
+        self.p['m1']       = float(m1)
+        self.p['m2']       = float(m2)
+        self.p['chi1z']    = float(chi1z)
+        self.p['chi2z']    = float(chi2z)
+        self.p['f_min']    = float(f_min)
+        self.p['f_max']    = float(f_max)
+        self.p['delta_f']  = float(delta_f)
+        self.p['distance'] = float(distance)
+        self.p['fRef']     = float(fRef)
+        self.p['phiRef']   = float(phiRef)
 
         self.p['Mtot'], self.p['eta'] = M_eta_m1_m2(self.p['m1'], self.p['m2'])
         self.p['chipn'] = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
