@@ -1,7 +1,7 @@
 from __future__ import division
 
 from phenom.waveform.waveform import Waveform
-from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, __MTSUN_SI__, __MSUN_SI__, __MRSUN_SI__, __PC_SI__, pow_2_of, pow_3_of, pow_4_of
+from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, pow_2_of, pow_3_of, pow_4_of, Constants
 from phenom.utils.remnant import fring, fdamp, FinalSpin0815
 from numpy import sqrt, pi, arange, zeros, exp, fabs, log, arctan
 
@@ -1129,7 +1129,7 @@ class PhenomD(Waveform, PhenomDInternals):
     # Use the constructor from the Waveform Class
     # def __init__(self, **p):
     #     super(PhenomD, self).__init__(p)
-    def __init__(self, m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * __PC_SI__, fRef=0., phiRef=0.):
+    def __init__(self, m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0.):
         """
         input:
         m1 (Msun)
@@ -1139,7 +1139,7 @@ class PhenomD(Waveform, PhenomDInternals):
         f_min (Hz)
         f_max (Hz)
         delta_f (sample rate Hz)
-        distance (m) : Default 1e6 * __PC_SI__ = 1 mega parsec
+        distance (m) : Default 1e6 * Constants.PC_SI = 1 mega parsec
         fRef (reference frequency Hz)
         phiRef (phase at fRef)"""
 
@@ -1165,9 +1165,9 @@ class PhenomD(Waveform, PhenomDInternals):
         self.p['chipn'] = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
 
         # Compute the amplitude pre-factor
-        self.p['amp0'] = 2. * sqrt(5. / (64.*pi)) * self.p['Mtot'] * __MRSUN_SI__ * self.p['Mtot'] * __MTSUN_SI__ / self.p['distance']
+        self.p['amp0'] = 2. * sqrt(5. / (64.*pi)) * self.p['Mtot'] * Constants.MRSUN_SI * self.p['Mtot'] * Constants.MTSUN_SI / self.p['distance']
 
-        self.M_sec = self.p['Mtot'] * __MTSUN_SI__ # Conversion factor Hz -> dimensionless frequency
+        self.M_sec = self.p['Mtot'] * Constants.MTSUN_SI # Conversion factor Hz -> dimensionless frequency
 
         self.define_phenomD_constants()
 

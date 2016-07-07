@@ -1,22 +1,23 @@
 from numpy import sqrt, pi
 
-# >>> import lal
-# >>> print lal.MTSUN_SI
-# 4.92549102554e-06
-__MTSUN_SI__ = 4.92549102554e-06
-__MSUN_SI__ = 1.9885469549614615e+30
-__MRSUN_SI__ = 1476.6250614046494
-__PC_SI__ = 3.085677581491367e+16
+class Constants:
+    # >>> import lal
+    # >>> print lal.MTSUN_SI
+    # 4.92549102554e-06
+    MTSUN_SI = 4.92549102554e-06
+    MSUN_SI = 1.9885469549614615e+30
+    MRSUN_SI = 1476.6250614046494
+    PC_SI = 3.085677581491367e+16
 
 def MftoHz(Mf, M):
     """MftoHz(Mf, M)
     """
-    return Mf / (__MTSUN_SI__*M)
+    return Mf / (Constants.MTSUN_SI*M)
 
 def HztoMf(Hz, M):
     """HztoMf(Hz, M)
     """
-    return Hz * (__MTSUN_SI__*M)
+    return Hz * (Constants.MTSUN_SI*M)
 
 def Mc_m1_m2(m1, m2):
     """
