@@ -3,7 +3,7 @@ from __future__ import division
 from phenom.waveform.waveform import Waveform
 from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, pow_2_of, pow_3_of, pow_4_of, Constants
 from phenom.utils.remnant import fring, fdamp, FinalSpin0815
-from numpy import sqrt, pi, arange, zeros, exp, fabs, log, arctan
+from numpy import sqrt, pi, arange, zeros, exp, fabs, log, arctan, angle, unwrap, absolute
 
 class PhenomDInternalsAmplitude(object):
     """docstring for PhenomDInternalsAmplitude"""
@@ -1229,8 +1229,10 @@ class PhenomD(Waveform, PhenomDInternals):
         #compute phase connection coefficients
         self.p['C1Int'], self.p['C2Int'], self.p['C1MRD'], self.p['C2MRD'] = self.ComputeIMRPhenDPhaseConnectionCoefficients(self.p, self.pn, self.phi_prefactors, self.powers_of_pi)
 
-
+        # compute time shift such that the ifft of htilde has it's peak
+        # amplitude (near) t=0. (only approximate)
         self.p['t0'] = self.computetimeshift(self.p)
+
         # // incorporating fRef
         self.p['MfRef'] = self.M_sec * self.p['fRef']
         powers_of_fRef = UsefulPowers(self.p['MfRef'])
@@ -1332,40 +1334,47 @@ class PhenomD(Waveform, PhenomDInternals):
         t0 = self.DPhiMRD(p['fmaxCalc'], p)
         return t0
 
-    def generateIMRAmpandPhase(self):
+    def IMRPhenomDGenerateFDSingleFrequencyPoint(self, Mf):
         """
-        generates frequency series for amplitude and phase
-        amplitude is not scaled by amp0
-        """
-        self.flist_Hz = arange(self.p['f_min'], self.p['f_max'], self.p['delta_f'])
-        self.amp = zeros(len(self.flist_Hz))
-        self.phase = zeros(len(self.flist_Hz))
-        for i in range(len(self.flist_Hz)):
-            Mf = self.flist_Hz[i] * self.M_sec
-            powers_of_Mf = UsefulPowers(Mf)
-            self.amp[i] = self.IMRPhenomDAmplitude(Mf, self.p, powers_of_Mf, self.amp_prefactors)
-            self.phase[i] = self.IMRPhenomDPhase(Mf, self.p, self.pn, powers_of_Mf, self.phi_prefactors)
-            # finally supply time and phase shift for fRef and approximately t=0 at amplitude max in time domain.
-            self.phase[i] -= self.p['t0']*(Mf-self.p['MfRef']) + self.p['phi_precalc']
-
-
-    def IMRPhenomDGenerateFD(self):
-        # TODO: Need to add f_ref and phase and time shift
-        """
-        generates frequency domain strain
-        calls generateIMRAmpandPhase() to set
-        self.amp and self.phase
-        Then combines as
-        self.htilde = self.p['amp0'] * self.amp * exp(-1.j * self.phase)"""
-        self.generateIMRAmpandPhase()
-
-        self.htilde = self.p['amp0'] * self.amp * exp(-1.j * self.phase)
-
-    def IMRPhenomDGenerateFDSingleFrequencyPoint(self, Mf, p):
-        """
-        standalone phenomD strain generator
+        standalone phenomD strain generator for a single frequency point
+        input:
+            Mf : geometric frequency
+        output:
+            htilde at Mf
         """
         powers_of_Mf = UsefulPowers(Mf)
-        # amp = self.IMRPhenomDAmplitude(Mf, self.p, powers_of_Mf, self.amp_prefactors)
-        # phi = self.IMRPhenomDPhase(Mf, self.p, self.pn, powers_of_Mf, self.phi_prefactors)
-        pass
+        amp   = self.IMRPhenomDAmplitude(Mf, self.p, powers_of_Mf, self.amp_prefactors)
+        phase = self.IMRPhenomDPhase(Mf, self.p, self.pn, powers_of_Mf, self.phi_prefactors)
+        # finally supply time and phase shift for fRef and approximately t=0 at amplitude max in time domain.
+        phase -= self.p['t0']*(Mf-self.p['MfRef']) + self.p['phi_precalc']
+        #amp0 scales to physical distance and correct units for strain
+        htilde = self.p['amp0'] * amp * exp(-1.j * phase)
+        return htilde
+
+    def IMRPhenomDGenerateFD(self):
+        """
+        generates frequency domain strain
+        calls IMRPhenomDGenerateFDSingleFrequencyPoint() in a loop.
+        attributes :
+            flist_Hz
+            htilde
+        """
+        self.flist_Hz = arange(self.p['f_min'], self.p['f_max'], self.p['delta_f'])
+        self.htilde = zeros(len(self.flist_Hz), dtype=complex)
+        for i in range(len(self.flist_Hz)):
+            #waveform generation is in terms of Mf so need to convert from Hz to Mf
+            Mf = self.flist_Hz[i] * self.M_sec
+            self.htilde[i] = self.IMRPhenomDGenerateFDSingleFrequencyPoint(Mf)
+
+    def getampandphase(self, htilde):
+        """
+        input: htilde
+        attributes :
+            amp
+            phase
+
+        given IMRPhenomDGenerateFD is run and self.htilde is initialised,
+        compute the amplitude and phase of the waveform.
+        """
+        self.amp = absolute(htilde)
+        self.phase = unwrap(angle(htilde))
