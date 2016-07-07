@@ -1141,7 +1141,7 @@ class PhenomD(Waveform, PhenomDInternals):
         delta_f (sample rate Hz)
         distance (m) : Default 1e6 * Constants.PC_SI = 1 mega parsec
         fRef (reference frequency Hz)
-        phiRef (phase at fRef)"""
+        phiRef (orbital phase at fRef)"""
 
         # enforce m1 >= m2 and chi1 is on m1
         if m1<m2: # swap spins and masses
@@ -1172,7 +1172,8 @@ class PhenomD(Waveform, PhenomDInternals):
         self.define_phenomD_constants()
 
         # Default PhenomD values
-        if self.p['f_max'] == 0.: self.p['f_max'] = self.f_CUT / self.M_sec # converted from Mf to Hz
+        if self.p['f_max'] == 0. : self.p['f_max'] = self.f_CUT / self.M_sec # converted from Mf to Hz
+        if self.p['fRef'] == 0.  : self.p['fRef'] = self.p['f_min']
 
         #initialise UsefulPowers instances
         self.powers_of_pi = UsefulPowers(pi)
@@ -1227,6 +1228,16 @@ class PhenomD(Waveform, PhenomDInternals):
 
         #compute phase connection coefficients
         self.p['C1Int'], self.p['C2Int'], self.p['C1MRD'], self.p['C2MRD'] = self.ComputeIMRPhenDPhaseConnectionCoefficients(self.p, self.pn, self.phi_prefactors, self.powers_of_pi)
+
+
+        self.p['t0'] = self.computetimeshift(self.p)
+        # // incorporating fRef
+        self.p['MfRef'] = self.M_sec * self.p['fRef']
+        powers_of_fRef = UsefulPowers(self.p['MfRef'])
+        self.p['phi_fRef'] = self.IMRPhenomDPhase(self.p['MfRef'], self.p, self.pn, powers_of_fRef, self.phi_prefactors)
+        # // factor of 2 b/c phi0 is orbital phase
+        self.p['phi_precalc'] = 2.*self.p['phiRef'] + self.p['phi_fRef']
+        #end of __init__()
 
     def define_phenomD_constants(self):
         """
@@ -1315,6 +1326,12 @@ class PhenomD(Waveform, PhenomDInternals):
             PhiInt = 1.0/p['eta'] * self.PhiIntAnsatz(Mf, p) + p['C1Int'] + p['C2Int'] * Mf
             return PhiInt
 
+    def computetimeshift(self, p):
+        # //time shift so that peak amplitude is approximately at t=0
+        # //For details see https://www.lsc-group.phys.uwm.edu/ligovirgo/cbcnote/WaveformsReview/IMRPhenomDCodeReview/timedomain
+        t0 = self.DPhiMRD(p['fmaxCalc'], p)
+        return t0
+
     def generateIMRAmpandPhase(self):
         """
         generates frequency series for amplitude and phase
@@ -1328,6 +1345,9 @@ class PhenomD(Waveform, PhenomDInternals):
             powers_of_Mf = UsefulPowers(Mf)
             self.amp[i] = self.IMRPhenomDAmplitude(Mf, self.p, powers_of_Mf, self.amp_prefactors)
             self.phase[i] = self.IMRPhenomDPhase(Mf, self.p, self.pn, powers_of_Mf, self.phi_prefactors)
+            # finally supply time and phase shift for fRef and approximately t=0 at amplitude max in time domain.
+            self.phase[i] -= self.p['t0']*(Mf-self.p['MfRef']) + self.p['phi_precalc']
+
 
     def IMRPhenomDGenerateFD(self):
         # TODO: Need to add f_ref and phase and time shift
@@ -1338,8 +1358,8 @@ class PhenomD(Waveform, PhenomDInternals):
         Then combines as
         self.htilde = self.p['amp0'] * self.amp * exp(-1.j * self.phase)"""
         self.generateIMRAmpandPhase()
-        self.htilde = self.p['amp0'] * self.amp * exp(-1.j * self.phase)
 
+        self.htilde = self.p['amp0'] * self.amp * exp(-1.j * self.phase)
 
     def IMRPhenomDGenerateFDSingleFrequencyPoint(self, Mf, p):
         """
