@@ -35,7 +35,7 @@ class Match(object):
     # TODO: the input to this function, ph1 and ph2
     # should be members of a `FrequencySeries` class
     # with attributes flist, deltaF etc.
-    def my_match(self, ph1, ph2, fmin, fmax):
+    def my_match(self, ph1, ph2, fmin=0, fmax=0, psd_fun=None):
         """computes the overlap between normalised
         templates, optimised over time and phase.
         Templates must be in frequency domain.
@@ -135,11 +135,21 @@ class Match(object):
 
         n = len(h1)
 
+        #setup psd
+        if psd_fun is None:
+            psd = np.ones(n)
+        else:
+            psd = psd_fun(flist)
+            #TODO: weird ratio thing...
+            # psd = psd_fun((flist[-1] - flist[0])/4) / psd #EasyMatch
+            # psd = psd_fun(100) / psd # michael
+            # psd = 4 *(flist[-1] - flist[0]) / psd #pycbc
+            psd = 1./psd #simplest choice...
         h1abs = np.abs(h1)
         h2abs = np.abs(h2)
-        norm1 = np.dot(h1abs, h1abs)
-        norm2 = np.dot(h2abs, h2abs)
-        intergrad = h1 * h2.conj()
+        norm1 = np.dot(h1abs, h1abs*psd)
+        norm2 = np.dot(h2abs, h2abs*psd)
+        intergrad = h1 * h2.conj() * psd
         zpf = 5
         integrand_zp = np.concatenate([np.zeros(n*zpf), intergrad, np.zeros(n*zpf)])
         csnr = np.asarray(np.fft.fft(integrand_zp)) # numpy.fft = Mma iFFT with our conventions
