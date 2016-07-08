@@ -20,3 +20,6 @@ class Waveform(object):
 
     def waveform_method(self):
         print "I am from Waveform"
+
+        # TODO: Need to add a master function to return hp and hx with appropriate
+        # inclination angle and sin, cosine etc.

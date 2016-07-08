@@ -1,4 +1,4 @@
-from numpy import sqrt, pi
+from numpy import sqrt, pi, absolute, ndarray, asarray
 
 class Constants:
     # >>> import lal
@@ -8,6 +8,65 @@ class Constants:
     MSUN_SI = 1.9885469549614615e+30
     MRSUN_SI = 1476.6250614046494
     PC_SI = 3.085677581491367e+16
+
+def setmask(arr, x1=None, x2=None):
+    """setmask(arr, x1, x2)
+    arr = 1D arr
+    x1 = lower value
+    x2 = upper value
+    by default it returns a mask that
+    is the full range of arr
+    returns
+    =======
+    mask, x1, x2
+    if input x1 and x2 are out of bounds
+    then it sets x1 and x2 to the boundry of arr"""
+    #setup up masks
+    if (x1 == None) | (x1 <= arr[0]):
+        #if no starting value for fit given use lowest
+        #or if starting value too low, defaulting to inital value in data
+        x1 = arr[0]
+    if (x2 == None) | (x2 >= arr[-1]):
+        #if no ending value for fit given use highest
+        #or if starting value too high, defaulting to ending value in data
+        x2 = arr[-1]
+    #data to be fit is masked
+    #data will only be fit over
+    #the masked values
+    mask = ( arr >= x1 ) & ( arr <= x2 )
+    return mask, x1, x2
+
+def _find_nearest(arr,val):
+    """
+    helper function for 'findindex'.
+    given an array and a value, return
+    the index of array that is closet to val.
+    input:
+        arr : numpy array
+        val : float or int, value to find
+    """
+    if isinstance(arr, ndarray) is not True:
+        arr = asarray(arr)
+    idx = absolute(arr - val).argmin()
+    return arr[idx]
+
+def findindex(arr, val):
+    """
+    given an array and a value, return
+    the index of array that is closet to val.
+    input:
+        arr : numpy array
+        val : float or int, value to find
+    """
+    if isinstance(arr, ndarray) is True:
+        try:
+            arr = arr.tolist()
+            try:
+                return arr.index(val)
+            except:
+                return _find_nearest(asarray(arr), val)
+        except:
+            raise ValueError('input arr must be either numpy array, list or tuple')
 
 def MftoHz(Mf, M):
     """MftoHz(Mf, M)
@@ -83,7 +142,7 @@ def q_from_eta(eta):
     input: eta
     output: q
     """
-    Seta = np.sqrt(1. - 4. * eta)
+    Seta = sqrt(1. - 4. * eta)
     return (1. + Seta - 2. * eta)/(2. * eta)
 
 def m1_m2_M_eta(M, eta):
@@ -94,7 +153,7 @@ def m1_m2_M_eta(M, eta):
     input: M, eta
     output: m1, m2
     """
-    Seta = np.sqrt(1. - 4. * eta)
+    Seta = sqrt(1. - 4. * eta)
     m1 = 1./2. * (M + Seta * M)
     m2 = 1./2. * (M - Seta * M)
     return m1, m2
