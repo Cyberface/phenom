@@ -36,20 +36,6 @@ def setmask(arr, x1=None, x2=None):
     mask = ( arr >= x1 ) & ( arr <= x2 )
     return mask, x1, x2
 
-def _find_nearest(arr,val):
-    """
-    helper function for 'findindex'.
-    given an array and a value, return
-    the index of array that is closet to val.
-    input:
-        arr : numpy array
-        val : float or int, value to find
-    """
-    if isinstance(arr, ndarray) is not True:
-        arr = asarray(arr)
-    idx = absolute(arr - val).argmin()
-    return arr[idx]
-
 def findindex(arr, val):
     """
     given an array and a value, return
@@ -60,11 +46,8 @@ def findindex(arr, val):
     """
     if isinstance(arr, ndarray) is True:
         try:
-            arr = arr.tolist()
-            try:
-                return arr.index(val)
-            except:
-                return _find_nearest(asarray(arr), val)
+            idx = absolute(arr - val).argmin()
+            return arr[idx]
         except:
             raise ValueError('input arr must be either numpy array, list or tuple')
 
