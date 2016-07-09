@@ -19,6 +19,7 @@ class Match(object):
         ph1, ph2 = instances of PhenomD class.
         Input data must be in Hz"""
         #generate strains
+        #TODO: ONLY WORKS FOR PHENOMD RIGHT NOW. MAKE MORE GENERAL
         ph1.IMRPhenomDGenerateFD()
         ph2.IMRPhenomDGenerateFD()
 
