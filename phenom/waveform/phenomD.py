@@ -74,7 +74,7 @@ class PhenomDInternalsAmplitude(object):
 
         eta = p['eta']
 
-        prefactors['amp0'] = amp0Func(p['eta'])
+        prefactors['PNamp0'] = amp0Func(p['eta'])
 
         chi1 = p['chi1z']
         chi2 = p['chi2z']
@@ -1294,7 +1294,7 @@ class PhenomD(Waveform, PhenomDInternals):
         fInsJoin = self.AMP_fJoin_INS
         fMRDJoin = p['fmaxCalc']
 
-        AmpPreFac = amp_prefactors['amp0'] / powers_of_Mf.seven_sixths
+        AmpPreFac = amp_prefactors['PNamp0'] / powers_of_Mf.seven_sixths
         # split the calculation to just 1 of 3 possible mutually exclusive ranges
         # this effectively implements a step function transition function
         if (Mf <= fInsJoin):	# Inspiral range
