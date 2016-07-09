@@ -1126,6 +1126,7 @@ class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
 
 class PhenomD(Waveform, PhenomDInternals):
     """docstring for PhenomD"""
+    #TODO: Make a constructor in the Waveform class to handle all input variables
     # Use the constructor from the Waveform Class
     # def __init__(self, **p):
     #     super(PhenomD, self).__init__(p)
