@@ -1270,12 +1270,14 @@ class PhenomD(Waveform, PhenomDInternals):
         #   * because the ISCO frequency is too low. For more details, see the review wiki
         #   * page https://www.lsc-group.phys.uwm.edu/ligovirgo/cbcnote/WaveformsReview/IMRPhenomDCodeReview/PhenD_LargeNegativeSpins
         #   */
+        #NOTE: This is not implemented in this python version
         self.MIN_FINAL_SPIN = -0.717
 
         # /**
         #   * A large mass ratio causes memory over-runs.
         #   * We test and put the limit an order of magnitude above that of previous waveform models (which were around q=100).
         #   */
+        #NOTE: This is not implemented in this python version
         self.MAX_ALLOWED_MASS_RATIO = 5000
         pass
 
