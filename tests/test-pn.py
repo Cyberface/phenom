@@ -1,5 +1,5 @@
 import phenom
-from phenom.utils.utils import Constants.MSUN_SI as MSUN
+
 ph = phenom.PhenomD(m1=10., m2=50., chi1z=0.3, chi2z=0.2, f_min=10)
 
 for i in range(len(ph.pn)):
@@ -9,8 +9,14 @@ print "Now comparing to LAL"
 print "Note, they will differ in the v[6] (3PN) term"
 print "because in PhenomD we do not use the 3PN spin-spin term"
 
-import lal
-import lalsimulation as lalsim
+try:
+    import lal
+except:
+    raise ValueError('failed to import lal')
+try:
+    import lalsimulation as lalsim
+except:
+    raise ValueError('failed to import lalsimulation')
 
 lalpn = lalsim.SimInspiralTaylorF2AlignedPhasing(10, 50, 0.3, 0.2, 1, 1, 7)
 # print lalpn.v
