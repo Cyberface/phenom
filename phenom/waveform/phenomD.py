@@ -74,6 +74,7 @@ class PhenomDInternalsAmplitude(object):
 
         eta = p['eta']
 
+        # eq.17 [1508.07253v2]
         prefactors['PNamp0'] = amp0Func(p['eta'])
 
         chi1 = p['chi1z']
