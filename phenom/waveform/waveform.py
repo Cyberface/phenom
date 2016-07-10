@@ -60,5 +60,10 @@ class Waveform(object):
             import phenom
             self.ph = phenom.PhenomD(self.p)
             self.ph.IMRPhenomDGenerateFD()
+        elif p['approximant'] == 'PhenomP':
+            raise NotImplementedError
+        else:
+            raise NotImplementedError('approximant = {0} is not implemented.\
+ Available approximants = {1}'.format(p['approximant'], self.available_approximants))
         # TODO: Need to add a master function to return hp and hx with appropriate
         # inclination angle and sin, cosine etc.
