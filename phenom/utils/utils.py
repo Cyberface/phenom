@@ -1,4 +1,4 @@
-from numpy import sqrt, pi, absolute, ndarray, asarray
+from numpy import sqrt, pi, absolute, ndarray, asarray, concatenate, zeros
 
 class Constants:
     # >>> import lal
@@ -8,6 +8,49 @@ class Constants:
     MSUN_SI = 1.9885469549614615e+30
     MRSUN_SI = 1476.6250614046494
     PC_SI = 3.085677581491367e+16
+
+
+def ceilpow2(n):
+    """
+    # from pyCBC this one works... mine didnt work.
+    convenience function to determine a power-of-2 upper frequency limit"""
+    from math import frexp
+    signif,exponent = frexp(n)
+    if (signif < 0):
+        return 1
+    if (signif == 0.5):
+        exponent -= 1
+    return (1) << exponent
+
+def pad_to_pow_2(arr, zpf):
+    """
+    arr : array or list to pad
+    zpf : zero padding factor : integer
+        if 0 then returns original length of arr, rounded to nearst power of 2
+    """
+    n = len(arr)
+
+    initial_pad_left = zpf * n
+    initial_pad_right = zpf * n
+    initial_finial_length = initial_pad_left + n + initial_pad_right
+
+    next_power_2 = ceilpow2(initial_finial_length)
+
+    to_add = absolute(next_power_2 - initial_finial_length)
+
+    #if even, add to both sides equally
+    #if odd, add extra one to left side
+    if (to_add % 2) == 0:
+        to_add_left = to_add / 2
+        to_add_right = to_add / 2
+    else:
+        to_add_left = to_add / 2 + 1
+        to_add_right = to_add / 2
+
+    left = zeros(initial_pad_left + to_add_left)
+    right = zeros(initial_pad_right + to_add_right)
+
+    return concatenate([left, arr, right])
 
 def setmask(arr, x1=None, x2=None):
     """setmask(arr, x1, x2)
