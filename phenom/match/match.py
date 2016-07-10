@@ -1,4 +1,4 @@
-from phenom.utils.utils import setmask, findindex
+from phenom.utils.utils import setmask, findindex, pad_to_pow_2
 import numpy as np
 
 
@@ -12,12 +12,16 @@ class Match(object):
     # TODO: the input to this function, ph1 and ph2
     # should be members of a `FrequencySeries` class
     # with attributes flist, deltaF etc.
-    def match(self, ph1, ph2, fmin=0, fmax=0, psd_fun=None):
+    def match(self, ph1, ph2, fmin=0, fmax=0, psd_fun=None, zpf=5):
         """computes the overlap between normalised
         templates, optimised over time and phase.
         Templates must be in frequency domain.
         ph1, ph2 = instances of PhenomD class.
-        Input data must be in Hz"""
+        Input data must be in Hz
+
+        zpf : default 5 : zero pad factor
+            automatically pads to power of 2
+        """
         #generate strains
         #TODO: ONLY WORKS FOR PHENOMD RIGHT NOW. MAKE MORE GENERAL
         ph1.IMRPhenomDGenerateFD()
@@ -127,45 +131,6 @@ class Match(object):
         norm1 = np.dot(h1abs, h1abs*psd)
         norm2 = np.dot(h2abs, h2abs*psd)
         integrand = h1 * h2.conj() * psd
-        zpf = 5
-        # padding = np.zeros(n*zpf)
-        # integrand_zp = np.concatenate([padding, integrand, padding])
-        #NOTE: when the length of the integrand_zp is some powers of two then the fft can be much longer than expected
-        #TODO: develop robust pad_to_pow_2 and test with different sample rates, some powers of 2 give slow results.s
         integrand_zp = pad_to_pow_2(integrand, zpf)
         csnr = np.asarray(np.fft.fft(integrand_zp)) # numpy.fft = Mma iFFT with our conventions
         return np.max(np.abs(csnr)) / np.sqrt(norm1*norm2)
-
-
-def pad_to_pow_2(array, zpf):
-    """given input array and zpf (zero pad factor)
-    return concat(a, array, b)
-    where a and b are zero padded by len(array) * zpf
-    and the whole array is now the next power of 2 in length
-    """
-    n        = len(array)
-    desired_n = n * zpf
-    # print ""
-    # print "old len = ", n
-    # print "desired_n len = ", desired_n
-    # print "current ex = ", np.log2(n)
-    exponent = np.ceil(np.log2(desired_n))
-    # print "exponent = ", exponent
-    # if exponent % 2 == 1:
-        # exponent += 1
-    # print "exponent = ", exponent
-    nextpow2 = int(2**exponent)
-    # print "nextpow2 = ", nextpow2
-    to_add   = int(np.abs(nextpow2 - n))
-    # print "to_add = ", to_add
-    # print "to_add/2 = ", to_add/2
-    leftpad  = np.zeros(to_add/2 + 1)
-    # print "len(leftpad) = ", len(leftpad)
-    rightpad = np.zeros(to_add/2)
-    # print "len(rightpad) = ", len(rightpad)
-    # print "len(array) = ", len(array)
-    ret      = np.concatenate([leftpad, array, rightpad])
-    # print "new len = ", len(ret)
-    # print "new exp = ", (np.log2(len(ret)))
-    # print "needed len = ", 2**np.ceil(np.log2(len(ret)))
-    return ret
