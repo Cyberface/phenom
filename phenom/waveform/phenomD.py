@@ -1125,13 +1125,9 @@ class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
     def __init__(self):
         pass
 
-class PhenomD(Waveform, PhenomDInternals):
+class PhenomD(PhenomDInternals):
     """docstring for PhenomD"""
-    #TODO: Make a constructor in the Waveform class to handle all input variables
-    # Use the constructor from the Waveform Class
-    # def __init__(self, **p):
-    #     super(PhenomD, self).__init__(p)
-    def __init__(self, m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0.):
+    def __init__(self,  m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0.):
         """
         input:
         m1 (Msun)
@@ -1145,23 +1141,17 @@ class PhenomD(Waveform, PhenomDInternals):
         fRef (reference frequency Hz)
         phiRef (orbital phase at fRef)"""
 
-        # enforce m1 >= m2 and chi1 is on m1
-        if m1<m2: # swap spins and masses
-            chi1z, chi2z = chi2z, chi1z
-            m1, m2 = m2, m1
-
-        # put inputs into a dictionary
-        self.p             = {}
-        self.p['m1']       = float(m1)
-        self.p['m2']       = float(m2)
-        self.p['chi1z']    = float(chi1z)
-        self.p['chi2z']    = float(chi2z)
-        self.p['f_min']    = float(f_min)
-        self.p['f_max']    = float(f_max)
-        self.p['delta_f']  = float(delta_f)
-        self.p['distance'] = float(distance)
-        self.p['fRef']     = float(fRef)
-        self.p['phiRef']   = float(phiRef)
+        self.p                = {}
+        self.p['m1']          = float(m1)
+        self.p['m2']          = float(m2)
+        self.p['chi1z']       = float(chi1z)
+        self.p['chi2z']       = float(chi2z)
+        self.p['f_min']       = float(f_min)
+        self.p['f_max']       = float(f_max)
+        self.p['delta_f']     = float(delta_f)
+        self.p['distance']    = float(distance)
+        self.p['fRef']        = float(fRef)
+        self.p['phiRef']      = float(phiRef)
 
         self.p['Mtot'], self.p['eta'] = M_eta_m1_m2(self.p['m1'], self.p['m2'])
         self.p['chipn'] = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
