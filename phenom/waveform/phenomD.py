@@ -1127,8 +1127,35 @@ class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
 
 class PhenomD(PhenomDInternals):
     """docstring for PhenomD"""
-    def __init__(self, p):
-        self.p = p
+    def __init__(self,  m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0.):
+        """
+        input:
+        m1 (Msun)
+        m2 (Msun)
+        chi1z (dimensionless)
+        chi2z (dimensionless)
+        f_min (Hz)
+        f_max (Hz)
+        delta_f (sample rate Hz)
+        distance (m) : Default 1e6 * Constants.PC_SI = 1 mega parsec
+        fRef (reference frequency Hz)
+        phiRef (orbital phase at fRef)"""
+
+        self.p                = {}
+        self.p['m1']          = float(m1)
+        self.p['m2']          = float(m2)
+        self.p['chi1z']       = float(chi1z)
+        self.p['chi2z']       = float(chi2z)
+        self.p['f_min']       = float(f_min)
+        self.p['f_max']       = float(f_max)
+        self.p['delta_f']     = float(delta_f)
+        self.p['distance']    = float(distance)
+        self.p['fRef']        = float(fRef)
+        self.p['phiRef']      = float(phiRef)
+
+        self.p['Mtot'], self.p['eta'] = M_eta_m1_m2(self.p['m1'], self.p['m2'])
+        self.p['chipn'] = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
+
         # Compute the amplitude pre-factor
         self.p['amp0'] = 2. * sqrt(5. / (64.*pi)) * self.p['Mtot'] * Constants.MRSUN_SI * self.p['Mtot'] * Constants.MTSUN_SI / self.p['distance']
 
