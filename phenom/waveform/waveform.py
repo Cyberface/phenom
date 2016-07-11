@@ -1,4 +1,5 @@
 from phenom.utils.utils import M_eta_m1_m2, chipn, Constants
+from numpy import cos
 
 class Waveform(object):
     """docstring for Waveform
@@ -108,16 +109,42 @@ class Waveform(object):
         input:
             input_params : dict
         """
+
+        """
+        From LALSimInspiral.c
+        The non-precessing waveforms return h(f) for optimal orientation
+        (i=0, Fp=1, Fc=0; Lhat pointed toward the observer)
+        To get generic polarizations we multiply by inclination dependence
+        and note hc(f) \propto -I * hp(f)
+        Non-precessing waveforms multiply hp by pfac, hc by -I*cfac
+        """
+        cfac = cos(input_params['inclination']);
+        pfac = 0.5 * (1. + cfac*cfac);
+
         if input_params['approximant'] == 'IMRPhenomD':
+            #TODO: Add checks to say: if chi1x != 0 then abort and say 'error, this is a non-precessing approximant!'
             from phenom.waveform import PhenomD
-            self.ph = PhenomD(\
+            #NOTE: Here we do NOT use self.ph!! This means that if you want access to the
+            #isntance attributes and variables from the PhenomD class, or indeed *any*
+            #approximant class then you will need to generate an instance of the PhenomD
+            #class. This can be changed if we want by replacing 'ph' with 'self.ph'
+            #in the lines below.
+            #I chose not to use 'self.ph' because I was afraid that the memory useage
+            #might be double if I didn't.
+            ph = PhenomD(\
                         m1=input_params['m1'], m2=input_params['m2'],\
                         chi1z=input_params['chi1z'], chi2z=input_params['chi2z'],\
                         f_min=input_params['f_min'], f_max=input_params['f_max'],\
                         delta_f=input_params['delta_f'],\
                         distance=input_params['distance'],\
                         fRef=input_params['fRef'], phiRef=input_params['phiRef'])
-            self.ph.IMRPhenomDGenerateFD()
+            ph.IMRPhenomDGenerateFD()
+            self.flist_Hz = ph.flist_Hz
+            self.htilde   = ph.htilde
+            #TODO: Check this by comparing with LAL!
+            hptilde = self.htilde
+            self.hctilde = -1.j * cfac * hptilde
+            self.hptilde = pfac * hptilde
 
         elif input_params['approximant'] == 'IMRPhenomP':
             raise NotImplementedError('PhenomP not implemented')
