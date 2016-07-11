@@ -24,8 +24,8 @@ class Match(object):
         """
         #generate strains
         #TODO: ONLY WORKS FOR PHENOMD RIGHT NOW. MAKE MORE GENERAL
-        ph1.IMRPhenomDGenerateFD()
-        ph2.IMRPhenomDGenerateFD()
+        # ph1.IMRPhenomDGenerateFD()
+        # ph2.IMRPhenomDGenerateFD()
 
         #first thing to do is to find the
         #common frequency range.
