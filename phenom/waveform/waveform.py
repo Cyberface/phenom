@@ -131,12 +131,11 @@ class Waveform(object):
             #in the lines below.
             #I chose not to use 'self.ph' because I was afraid that the memory useage
             #might be double if I didn't.
-            ph = PhenomD(\
-                        m1=input_params['m1'], m2=input_params['m2'],\
-                        chi1z=input_params['chi1z'], chi2z=input_params['chi2z'],\
-                        f_min=input_params['f_min'], f_max=input_params['f_max'],\
-                        delta_f=input_params['delta_f'],\
-                        distance=input_params['distance'],\
+            ph = PhenomD(m1=input_params['m1'], m2=input_params['m2'],
+                        chi1z=input_params['chi1z'], chi2z=input_params['chi2z'],
+                        f_min=input_params['f_min'], f_max=input_params['f_max'],
+                        delta_f=input_params['delta_f'],
+                        distance=input_params['distance'],
                         fRef=input_params['fRef'], phiRef=input_params['phiRef'])
             ph.IMRPhenomDGenerateFD()
             self.flist_Hz = ph.flist_Hz
