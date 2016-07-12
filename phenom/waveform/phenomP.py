@@ -129,7 +129,9 @@ class PhenomP():
                     delta_f=p['delta_f'],
                     distance=p['distance'],
                     # fRef=0., phiRef=0.)
-                    fRef=p['fRef'], phiRef=p['phiRef'])
+                    fRef=p['fRef'], phiRef=p['phiRef'],
+                    finspin_func="FinalSpin0815")
+        #TODO: CODE UP THE PHENOMP FINAL SPIN FUNCTION AND SUBSTITUTE IT IN ABOVE
 
         #could change this to generate at a single frequency point.
         ph.IMRPhenomDGenerateFD()

@@ -1170,7 +1170,7 @@ class PhenomD(PhenomDInternals):
     #NOTE: This is not implemented in this python version
     MAX_ALLOWED_MASS_RATIO = 5000
 
-    def __init__(self,  m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0.):
+    def __init__(self,  m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0., finspin_func="FinalSpin0815"):
         """
         input:
         m1 (Msun)
@@ -1216,7 +1216,8 @@ class PhenomD(PhenomDInternals):
         #model_pars is a dict containing all? the internal variables of phenomD
         #final spin is a variable because phenomP uses a different final spin to
         #phenomD
-        self.model_pars = self.compute_model_parameters(self.p, "FinalSpin0815")
+        self.finspin_func = finspin_func
+        self.model_pars = self.compute_model_parameters(self.p, self.finspin_func)
 
 
         #end of __init__()

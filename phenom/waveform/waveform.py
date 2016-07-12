@@ -136,7 +136,8 @@ class Waveform(object):
                         f_min=input_params['f_min'], f_max=input_params['f_max'],
                         delta_f=input_params['delta_f'],
                         distance=input_params['distance'],
-                        fRef=input_params['fRef'], phiRef=input_params['phiRef'])
+                        fRef=input_params['fRef'], phiRef=input_params['phiRef'],
+                        finspin_func="FinalSpin0815")
             ph.IMRPhenomDGenerateFD()
             self.flist_Hz = ph.flist_Hz
             self.htilde   = ph.htilde
