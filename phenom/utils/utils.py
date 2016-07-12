@@ -256,3 +256,23 @@ class UsefulPowers(object):
         self.seven_thirds = self.third * self.two
         self.eight_thirds = self.two_thirds * self.two
         self.seven_sixths = number * self.sixth
+
+def WignerdCoefficients(v, SL, eta, Sp):
+    """
+    v   : Cubic root of (Pi * Frequency (geometric))
+    SL  : Dimensionfull aligned spin
+    eta : Symmetric mass-ratio
+    Sp  : Dimensionfull spin component in the orbital plane
+    """
+    from phenom.pn.pn import PhenomPL2PN
+
+    #We define the shorthand s := Sp / (L + SL)
+    L = PhenomPL2PN(v, eta)
+    #We ignore the sign of L + SL below.
+    s = Sp / (L + SL)  #s := Sp / (L + SL)
+    s2 = s*s
+    cos_beta = 1.0 / sqrt(1.0 + s2)
+    cos_beta_half = + sqrt( (1.0 + cos_beta) / 2.0 )  #cos(beta/2)
+    sin_beta_half = + sqrt( (1.0 - cos_beta) / 2.0 )  #sin(beta/2)
+
+    return cos_beta_half, sin_beta_half

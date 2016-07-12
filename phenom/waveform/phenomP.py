@@ -1,11 +1,11 @@
 from __future__ import division
 
-from phenom.utils.utils import M_eta_m1_m2, chipn, Constants, chieffPH
-
+from phenom.utils.utils import M_eta_m1_m2, chipn, Constants, chieffPH, WignerdCoefficients
+from phenom.utils import swsh
 from phenom.waveform import PhenomD
 from phenom.pn.pn import PhenomPAlpha, PhenomPBeta, PhenomPEpsilon
 
-from numpy import exp, arange, zeros
+from numpy import exp, arange, zeros, array, conj
 
 class PhenomP():
 
@@ -58,23 +58,41 @@ class PhenomP():
 
         self.p['Mtot'], self.p['eta'] = M_eta_m1_m2(self.p['m1'], self.p['m2'])
 
+
+        # Dimensionfull aligned spin.
+        self.p['SL'] = self.p['chi1z']*self.p['m1']**2. + self.p['chi2z']*self.p['m2']**2.
+        #Dimensionfull spin component in the orbital plane. S_perp = S_2_perp
+        # self.p['Sperp'] = self.p['chip']*(self.p['m1']**2.)
+        #NOTE: Currently code only works if m1>m2 and chip=chi1x
+        self.p['Sperp'] = self.p['chi1x']*(self.p['m1']**2.)
         #NOTE: In LAL PhenomP uses q=m2/m1, q>=1, we use opposite.
         self.p['q'] = self.p['m1'] / self.p['m2']
 
-        self.M_sec = self.p['Mtot'] * Constants.MTSUN_SI # Conversion factor Hz -> dimensionless frequency
+        self.p['M_sec'] = self.p['Mtot'] * Constants.MTSUN_SI # Conversion factor Hz -> dimensionless frequency
 
-        self.piM = Constants.LAL_PI * self.M_sec
+        self.piM = Constants.LAL_PI * self.p['M_sec']
 
         #chipn is used in the aligned model 'phenomD'
         self.p['chipn']  = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
         #chieff is used in the twisting part
         self.p['chieff'] = chieffPH(self.p['m1'], self.p['m2'], self.p['chi1z'], self.p['chi2z'])
 
-        if self.p['f_max'] == 0. : self.p['f_max'] = self.Mf_CUT / self.M_sec # converted from Mf to Hz
+        if self.p['f_max'] == 0. : self.p['f_max'] = self.Mf_CUT / self.p['M_sec'] # converted from Mf to Hz
         if self.p['fRef'] == 0.  : self.p['fRef'] = self.p['f_min']
-        self.p['MfRef'] = self.p['fRef'] * self.M_sec
+        self.p['MfRef'] = self.p['fRef'] * self.p['M_sec']
         # orbital angular frequency = pi * f_GW = omega_GW / 2
         self.p['omega_Ref'] = self.p['MfRef'] * Constants.LAL_PI
+
+        #Compute Ylm's only once and pass them to PhenomPCoreOneFrequency() below.
+        Y2m = {}
+        thetaJ = 0.2345 #TODO: FIX ME THIS IS JUST A TMP!
+        ytheta  = thetaJ
+        yphi    = 0.
+        Y2m['Y2m2'] = swsh.SWSH(2, -2, ytheta, yphi).val
+        Y2m['Y2m1'] = swsh.SWSH(2, -1, ytheta, yphi).val
+        Y2m['Y20']  = swsh.SWSH(2,  0, ytheta, yphi).val
+        Y2m['Y21']  = swsh.SWSH(2,  1, ytheta, yphi).val
+        Y2m['Y22']  = swsh.SWSH(2,  2, ytheta, yphi).val
 
         #compute amplitude and phase from aligned spin model
         #the amplitude is unscaled.
@@ -86,8 +104,8 @@ class PhenomP():
         #'amp_scale = amp0 in LALSimIMRPhenomP.c'
         self.p['amp_scale'] = self.p['Mtot'] * Constants.MRSUN_SI * self.p['Mtot'] * Constants.MTSUN_SI / self.p['distance']
 
-        #
-        hP = self.p['amp_scale'] * aligned_amp * exp(-1.j * aligned_phase)
+        # aligned spin strain
+        self.hP = self.p['amp_scale'] * aligned_amp * exp(-1.j * aligned_phase)
 
         alpha_at_omega_Ref = self._alpha_precessing_angle(self.p['omega_Ref'], self.p)
         epsilon_at_omega_Ref = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p)
@@ -101,14 +119,53 @@ class PhenomP():
         self.alpha = zeros(len(omega_flist_hz))
         self.epsilon = zeros(len(omega_flist_hz))
         for i in range(len(omega_flist_hz)):
-            omega = omega_flist_hz[i] * self.M_sec
+            omega = omega_flist_hz[i] * self.p['M_sec']
             self.alpha[i] = self._alpha_precessing_angle(omega, self.p)
             self.epsilon[i] = self._epsilon_precessing_angle(omega, self.p)
 
-        self.alpha -= alpha_at_omega_Ref
+        self.alpha -= alpha_at_omega_Ref #TODO When I have the 'compute phenomP model parameters' function will need to subtract off alpha0 too!!
         self.epsilon -= epsilon_at_omega_Ref
 
-        pass
+
+        cBetah, sBetah = WignerdCoefficients(omega**(1./3.), self.p['SL'], self.p['eta'], self.p['Sperp'])
+
+        cBetah2 = cBetah*cBetah
+        cBetah3 = cBetah2*cBetah
+        cBetah4 = cBetah3*cBetah
+        sBetah2 = sBetah*sBetah
+        sBetah3 = sBetah2*sBetah
+        sBetah4 = sBetah3*sBetah
+
+        """Compute Wigner d coefficients
+        The expressions below agree with refX [Goldstein?] and Mathematica
+        d2  = Table[WignerD[{2, mp, 2}, 0, -\[Beta], 0], {mp, -2, 2}]
+        dm2 = Table[WignerD[{2, mp, -2}, 0, -\[Beta], 0], {mp, -2, 2}]
+        """
+        sqrt_6 = 2.44948974278317788
+        d2   = array([sBetah4, 2*cBetah*sBetah3, sqrt_6*sBetah2*cBetah2, 2*cBetah3*sBetah, cBetah4])
+        #Exploit symmetry d^2_{-2,-m} = (-1)^m d^2_{2,m}
+        dm2  = array([d2[4], -d2[3], d2[2], -d2[1], d2[0]])
+
+        Y2mA = array([Y2m['Y2m2'], Y2m['Y2m1'], Y2m['Y20'], Y2m['Y21'], Y2m['Y22']])
+        hp_sum = 0.
+        hc_sum = 0.
+        #Sum up contributions to \tilde h+ and \tilde hx
+        #Precompute powers of e^{i m alpha}
+        cexp_i_alpha = exp(+1.j*self.alpha)
+        cexp_2i_alpha = cexp_i_alpha*cexp_i_alpha
+        cexp_mi_alpha = 1.0/cexp_i_alpha
+        cexp_m2i_alpha = cexp_mi_alpha*cexp_mi_alpha
+        cexp_im_alpha = array([cexp_m2i_alpha, cexp_mi_alpha, 1.0, cexp_i_alpha, cexp_2i_alpha])
+
+        for m in [-2, -1, 0, 1, 2]:
+            T2m   = cexp_im_alpha[-m+2] * dm2[m+2] *      Y2mA[m+2]  # = cexp(-I*m*alpha) * dm2[m+2] *      Y2mA[m+2]
+            Tm2m  = cexp_im_alpha[m+2]  * d2[m+2]  * conj(Y2mA[m+2]) # = cexp(+I*m*alpha) * d2[m+2]  * conj(Y2mA[m+2])
+            hp_sum +=     T2m + Tm2m
+            hc_sum += +1.j*(T2m - Tm2m)
+
+        eps_phase_hP = exp(-2*1.j*self.epsilon) * self.hP / 2.0
+        self.hp = eps_phase_hP * hp_sum
+        self.hc = eps_phase_hP * hc_sum
 
     def _generate_aligned_spin_approx(self, p):
         """
