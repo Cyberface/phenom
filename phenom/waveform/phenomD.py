@@ -1175,7 +1175,7 @@ class PhenomD(PhenomDInternals):
         self.define_phenomD_constants()
 
         # Default PhenomD values
-        if self.p['f_max'] == 0. : self.p['f_max'] = self.f_CUT / self.M_sec # converted from Mf to Hz
+        if self.p['f_max'] == 0. : self.p['f_max'] = self.Mf_CUT / self.M_sec # converted from Mf to Hz
         if self.p['fRef'] == 0.  : self.p['fRef'] = self.p['f_min']
 
         #initialise UsefulPowers instances
@@ -1254,7 +1254,7 @@ class PhenomD(PhenomDInternals):
         # /**
         #  * Dimensionless frequency (Mf) at which define the end of the waveform
         #  */
-        self.f_CUT = 0.2
+        self.Mf_CUT = 0.2
 
         # /**
         #  * Dimensionless frequency (Mf) at which the inspiral amplitude
