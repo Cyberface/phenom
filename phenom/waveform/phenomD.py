@@ -1232,15 +1232,13 @@ class PhenomD(PhenomDInternals):
         model_pars = {}
 
         # Compute the amplitude pre-factor
-        model_pars['amp0'] = 2. * sqrt(5. / (64.*pi)) * self.p['Mtot'] * Constants.MRSUN_SI * self.p['Mtot'] * Constants.MTSUN_SI / self.p['distance']
+        model_pars['amp0'] = 2. * sqrt(5. / (64.*pi)) * p['Mtot'] * Constants.MRSUN_SI * p['Mtot'] * Constants.MTSUN_SI / p['distance']
 
-        model_pars['M_sec'] = self.p['Mtot'] * Constants.MTSUN_SI # Conversion factor Hz -> dimensionless frequency
+        model_pars['M_sec'] = p['Mtot'] * Constants.MTSUN_SI # Conversion factor Hz -> dimensionless frequency
 
         # Default PhenomD values
         if p['f_max'] == 0. : p['f_max'] = self.Mf_CUT / model_pars['M_sec'] # converted from Mf to Hz
         if p['fRef'] == 0.  : p['fRef'] = p['f_min']
-
-
 
         # compute prediction of ringdown frequency
 
@@ -1311,8 +1309,6 @@ class PhenomD(PhenomDInternals):
         model_pars['phi_precalc'] = 2.*p['phiRef'] + model_pars['phi_fRef']
 
         return model_pars
-
-
 
     def IMRPhenomDAmplitude(self, Mf, p, model_pars, powers_of_Mf):
         """Call ComputeIMRPhenomDAmplitudeCoefficients() first!
