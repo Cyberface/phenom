@@ -1304,13 +1304,13 @@ class PhenomD(PhenomDInternals):
         # // incorporating fRef
         model_pars['MfRef'] = model_pars['M_sec'] * p['fRef']
         powers_of_fRef = UsefulPowers(model_pars['MfRef'])
-        model_pars['phi_fRef'] = self.IMRPhenomDPhase(model_pars['MfRef'], p, model_pars, powers_of_fRef)
+        model_pars['phi_fRef'] = self.IMRPhenomDPhase(model_pars['MfRef'], p['eta'], model_pars, powers_of_fRef)
         # // factor of 2 b/c phi0 is orbital phase
         model_pars['phi_precalc'] = 2.*p['phiRef'] + model_pars['phi_fRef']
 
         return model_pars
 
-    def IMRPhenomDAmplitude(self, Mf, p, model_pars, powers_of_Mf):
+    def IMRPhenomDAmplitude(self, Mf, model_pars, powers_of_Mf):
         """Call ComputeIMRPhenomDAmplitudeCoefficients() first!
         This function computes the IMR amplitude given phenom coefficients.
         Defined in VIII. Full IMR Waveforms arXiv:1508.07253
@@ -1338,7 +1338,7 @@ class PhenomD(PhenomDInternals):
             AmpInt = AmpPreFac * self.AmpIntAnsatz(Mf, model_pars)
             return AmpInt
 
-    def IMRPhenomDPhase(self, Mf, p, model_pars, powers_of_Mf):
+    def IMRPhenomDPhase(self, Mf, eta, model_pars, powers_of_Mf):
         """
         This function computes the IMR phase given phenom coefficients.
         Defined in VIII. Full IMR Waveforms arXiv:1508.07253
@@ -1353,14 +1353,14 @@ class PhenomD(PhenomDInternals):
         phi_prefactors = model_pars['phi_prefactors']
 
         if (Mf <= fInsJoin):	# Inspiral rangee
-            PhiIns = self.PhiInsAnsatzInt(Mf, p['eta'], phi_prefactors, powers_of_Mf, self.powers_of_pi)
+            PhiIns = self.PhiInsAnsatzInt(Mf, eta, phi_prefactors, powers_of_Mf, self.powers_of_pi)
             return PhiIns
         elif (Mf >= fMRDJoin):	# MRD range
-            PhiMRD = 1.0/p['eta'] * self.PhiMRDAnsatzInt(Mf, model_pars) + model_pars['C1MRD'] + model_pars['C2MRD'] * Mf
+            PhiMRD = 1.0/eta * self.PhiMRDAnsatzInt(Mf, model_pars) + model_pars['C1MRD'] + model_pars['C2MRD'] * Mf
             return PhiMRD
         else:
             #	Intermediate range
-            PhiInt = 1.0/p['eta'] * self.PhiIntAnsatz(Mf, model_pars) + model_pars['C1Int'] + model_pars['C2Int'] * Mf
+            PhiInt = 1.0/eta * self.PhiIntAnsatz(Mf, model_pars) + model_pars['C1Int'] + model_pars['C2Int'] * Mf
             return PhiInt
 
     def computetimeshift(self, model_pars, eta):
@@ -1378,8 +1378,8 @@ class PhenomD(PhenomDInternals):
             htilde at Mf
         """
         powers_of_Mf = UsefulPowers(Mf)
-        amp   = self.IMRPhenomDAmplitude(Mf, self.p, self.model_pars, powers_of_Mf)
-        phase = self.IMRPhenomDPhase(Mf, self.p, self.model_pars, powers_of_Mf)
+        amp   = self.IMRPhenomDAmplitude(Mf, self.model_pars, powers_of_Mf)
+        phase = self.IMRPhenomDPhase(Mf, self.p['eta'], self.model_pars, powers_of_Mf)
         # finally supply time and phase shift for fRef and approximately t=0 at amplitude max in time domain.
         phase -= self.model_pars['t0']*(Mf-self.model_pars['MfRef']) + self.model_pars['phi_precalc']
         #amp0 scales to physical distance and correct units for strain
