@@ -8,11 +8,11 @@ def FinalSpin0815_s(eta, s):
     s defined around Equation 3.6.
     """
     eta2 = eta*eta
-    eta3 = eta2*eta;
-    eta4 = eta3*eta;
-    s2 = s*s;
-    s3 = s2*s;
-    s4 = s3*s;
+    eta3 = eta2*eta
+    eta4 = eta3*eta
+    s2 = s*s
+    s3 = s2*s
+    s4 = s3*s
 
     return 3.4641016151377544*eta - 4.399247300629289*eta2 + \
     9.397292189321194*eta3 - 13.180949901606242*eta4 + \
@@ -94,3 +94,43 @@ def fdamp(eta, chi1, chi2, finspin):
     ifdamp = interpolate.interp1d(QNMData['QNMData_a'], QNMData['QNMData_fdamp'])
 
     return ifdamp(finspin) / (1.0 - EradRational0815(eta, chi1, chi2))
+
+"""
+Wrapper for final-spin formula based on:
+- IMRPhenomD's FinalSpin0815() for aligned spins.
+
+We use their convention m1>m2
+and put <b>all in-plane spin on the larger BH</b>.
+
+In the aligned limit return the FinalSpin0815 value.
+"""
+def FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(m1, m2, chi1x, chi1z, chi2z):
+    """
+    m1     #/**< Mass of companion 1 (solar masses) */
+    m2     #/**< Mass of companion 2 (solar masses) */
+    chi1x  #/**< Dimensionless spin in the orbital plane */
+    chi1z  #/**< Aligned spin of BH 1 */
+    chi2z  #/**< Aligned spin of BH 2 */
+    """
+    from math import copysign
+
+    m1 = float(m1)
+    m2 = float(m2)
+    chi1x = float(chi1x)
+    chi1z = float(chi1z)
+    chi2z = float(chi2z)
+
+    M = m1 + m2
+    eta = m1*m2/(M*M)
+
+    if (m1 >= m2):
+        q_factor = m1/M
+        af_parallel = FinalSpin0815(eta, chi1z, chi2z)
+    else:
+        q_factor = m2/M
+        af_parallel = FinalSpin0815(eta, chi2z, chi1z)
+
+    Sperp = chi1x * q_factor*q_factor
+
+    af = copysign(1.0, af_parallel) * sqrt(Sperp*Sperp + af_parallel*af_parallel)
+    return af
