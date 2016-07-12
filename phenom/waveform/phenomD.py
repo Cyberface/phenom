@@ -1127,6 +1127,44 @@ class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
 
 class PhenomD(PhenomDInternals):
     """docstring for PhenomD"""
+
+        #sets phenomD CONSTANTS
+        #https://github.com/lscsoft/lalsuite/blob/master/lalsimulation/src/LALSimIMRPhenomD.h
+
+        # /* CONSTANTS */
+
+        # /**
+        #  * Dimensionless frequency (Mf) at which define the end of the waveform
+        #  */
+        Mf_CUT = 0.2
+
+        # /**
+        #  * Dimensionless frequency (Mf) at which the inspiral amplitude
+        #  * switches to the intermediate amplitude
+        #  */
+        AMP_fJoin_INS = 0.014
+
+        # /**
+        #  * Dimensionless frequency (Mf) at which the inspiral phase
+        #  * switches to the intermediate phase
+        #  */
+        PHI_fJoin_INS = 0.018
+
+        # /**
+        #   * Minimal final spin value below which the waveform might behave pathological
+        #   * because the ISCO frequency is too low. For more details, see the review wiki
+        #   * page https://www.lsc-group.phys.uwm.edu/ligovirgo/cbcnote/WaveformsReview/IMRPhenomDCodeReview/PhenD_LargeNegativeSpins
+        #   */
+        #NOTE: This is not implemented in this python version
+        MIN_FINAL_SPIN = -0.717
+
+        # /**
+        #   * A large mass ratio causes memory over-runs.
+        #   * We test and put the limit an order of magnitude above that of previous waveform models (which were around q=100).
+        #   */
+        #NOTE: This is not implemented in this python version
+        MAX_ALLOWED_MASS_RATIO = 5000
+
     def __init__(self,  m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0.):
         """
         input:
@@ -1171,8 +1209,6 @@ class PhenomD(PhenomDInternals):
         self.p['amp0'] = 2. * sqrt(5. / (64.*pi)) * self.p['Mtot'] * Constants.MRSUN_SI * self.p['Mtot'] * Constants.MTSUN_SI / self.p['distance']
 
         self.M_sec = self.p['Mtot'] * Constants.MTSUN_SI # Conversion factor Hz -> dimensionless frequency
-
-        self.define_phenomD_constants()
 
         # Default PhenomD values
         if self.p['f_max'] == 0. : self.p['f_max'] = self.Mf_CUT / self.M_sec # converted from Mf to Hz
@@ -1243,46 +1279,6 @@ class PhenomD(PhenomDInternals):
         # // factor of 2 b/c phi0 is orbital phase
         self.p['phi_precalc'] = 2.*self.p['phiRef'] + self.p['phi_fRef']
         #end of __init__()
-
-    def define_phenomD_constants(self):
-        """
-        sets phenomD CONSTANTS
-        https://github.com/lscsoft/lalsuite/blob/master/lalsimulation/src/LALSimIMRPhenomD.h
-        """
-        # /* CONSTANTS */
-
-        # /**
-        #  * Dimensionless frequency (Mf) at which define the end of the waveform
-        #  */
-        self.Mf_CUT = 0.2
-
-        # /**
-        #  * Dimensionless frequency (Mf) at which the inspiral amplitude
-        #  * switches to the intermediate amplitude
-        #  */
-        self.AMP_fJoin_INS = 0.014
-
-        # /**
-        #  * Dimensionless frequency (Mf) at which the inspiral phase
-        #  * switches to the intermediate phase
-        #  */
-        self.PHI_fJoin_INS = 0.018
-
-        # /**
-        #   * Minimal final spin value below which the waveform might behave pathological
-        #   * because the ISCO frequency is too low. For more details, see the review wiki
-        #   * page https://www.lsc-group.phys.uwm.edu/ligovirgo/cbcnote/WaveformsReview/IMRPhenomDCodeReview/PhenD_LargeNegativeSpins
-        #   */
-        #NOTE: This is not implemented in this python version
-        self.MIN_FINAL_SPIN = -0.717
-
-        # /**
-        #   * A large mass ratio causes memory over-runs.
-        #   * We test and put the limit an order of magnitude above that of previous waveform models (which were around q=100).
-        #   */
-        #NOTE: This is not implemented in this python version
-        self.MAX_ALLOWED_MASS_RATIO = 5000
-        pass
 
     def IMRPhenomDAmplitude(self, Mf, p, powers_of_Mf, amp_prefactors):
         """Call ComputeIMRPhenomDAmplitudeCoefficients() first!
