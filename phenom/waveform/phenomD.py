@@ -62,7 +62,7 @@ class PhenomDInternalsAmplitude(object):
         + (-1.9889806527362722e6 + 3.0888029960154563e7*eta - 8.390870279256162e7*eta2)*xi2 \
         + (-1.4535031953446497e6 + 1.7063528990822166e7*eta - 4.2748659731120914e7*eta2)*xi3
 
-    def init_amp_ins_prefactors(self, p, powers_of_pi):
+    def init_amp_ins_prefactors(self, p, model_pars, powers_of_pi):
         """helper function for AmpInsAnsatz
         p : dict
         powers_of_pi : instant of UsefulPowers class
@@ -75,14 +75,14 @@ class PhenomDInternalsAmplitude(object):
         eta = p['eta']
 
         # eq.17 [1508.07253v2]
-        prefactors['PNamp0'] = amp0Func(p['eta'])
+        prefactors['PNamp0'] = amp0Func(eta)
 
         chi1 = p['chi1z']
         chi2 = p['chi2z']
         # phenom coefficients
-        rho1 = p['rho1']
-        rho2 = p['rho2']
-        rho3 = p['rho3']
+        rho1 = model_pars['rho1']
+        rho2 = model_pars['rho2']
+        rho3 = model_pars['rho3']
 
         chi12 = chi1*chi1
         chi22 = chi2*chi2
@@ -146,7 +146,7 @@ class PhenomDInternalsAmplitude(object):
                 + powers_of_Mf.eight_thirds * prefactors['eight_thirds'] \
         		+ Mf3 * prefactors['three']
 
-    def DAmpInsAnsatz(self, Mf, p, powers_of_pi, powers_of_Mf):
+    def DAmpInsAnsatz(self, Mf, p, model_pars, powers_of_pi, powers_of_Mf):
         """
         input frequency : Mf
         Take the AmpInsAnsatz expression and compute the first derivative
@@ -155,9 +155,9 @@ class PhenomDInternalsAmplitude(object):
         eta = p['eta']
         chi1 = p['chi1z']
         chi2 = p['chi2z']
-        rho1 = p['rho1']
-        rho2 = p['rho2']
-        rho3 = p['rho3']
+        rho1 = model_pars['rho1']
+        rho2 = model_pars['rho2']
+        rho3 = model_pars['rho3']
 
         chi12 = chi1*chi1
         chi22 = chi2*chi2
@@ -238,32 +238,32 @@ class PhenomDInternalsAmplitude(object):
         + (-0.05296577374411866 - 0.9923793203111362*eta + 4.820681208409587*eta2)*xi2 \
         + (-0.006134139870393713 - 0.38429253308696365*eta + 1.7561754421985984*eta2)*xi3
 
-    def AmpMRDAnsatz(self, Mf, p):
+    def AmpMRDAnsatz(self, Mf, model_pars):
         """
         input frequency : Mf
         Ansatz for the merger-ringdown amplitude. Equation 19 arXiv:1508.07253
         """
-        fRD = p['fRD']
-        fDM = p['fDM']
-        gamma1 = p['gamma1']
-        gamma2 = p['gamma2']
-        gamma3 = p['gamma3']
+        fRD = model_pars['fRD']
+        fDM = model_pars['fDM']
+        gamma1 = model_pars['gamma1']
+        gamma2 = model_pars['gamma2']
+        gamma3 = model_pars['gamma3']
         fDMgamma3 = fDM*gamma3
         fminfRD = Mf - fRD
         return exp( -(fminfRD)*gamma2 / (fDMgamma3) ) \
         * (fDMgamma3*gamma1) / (pow_2_of(fminfRD) + pow_2_of(fDMgamma3))
 
 
-    def DAmpMRDAnsatz(self, Mf, p):
+    def DAmpMRDAnsatz(self, Mf, model_pars):
         """
         input frequency : Mf
         first frequency derivative of AmpMRDAnsatz
         """
-        fRD = p['fRD']
-        fDM = p['fDM']
-        gamma1 = p['gamma1']
-        gamma2 = p['gamma2']
-        gamma3 = p['gamma3']
+        fRD = model_pars['fRD']
+        fDM = model_pars['fDM']
+        gamma1 = model_pars['gamma1']
+        gamma2 = model_pars['gamma2']
+        gamma3 = model_pars['gamma3']
 
         fDMgamma3 = fDM * gamma3
         pow2_fDMgamma3 = pow_2_of(fDMgamma3)
@@ -275,15 +275,15 @@ class PhenomDInternalsAmplitude(object):
         - (gamma2*gamma1) / ( expfactor * (pow2pluspow2))
 
 
-    def fmaxCalc(self, p):
+    def fmaxCalc(self, model_pars):
         """
         Equation 20 arXiv:1508.07253 (called f_peak in paper)
         analytic location of maximum of AmpMRDAnsatz
         """
-        fRD    = p['fRD']
-        fDM    = p['fDM']
-        gamma2 = p['gamma2']
-        gamma3 = p['gamma3']
+        fRD    = model_pars['fRD']
+        fDM    = model_pars['fDM']
+        gamma2 = model_pars['gamma2']
+        gamma3 = model_pars['gamma3']
 
         # // NOTE: There's a problem with this expression from the paper becoming imaginary if gamma2>=1
         # // Fix: if gamma2 >= 1 then set the square root term to zero.
@@ -298,14 +298,14 @@ class PhenomDInternalsAmplitude(object):
     # // (constraining 3 values and 2 derivatives)
     # // AmpIntAnsatzFunc[]
 
-    def AmpIntAnsatz(self, Mf, p):
+    def AmpIntAnsatz(self, Mf, model_pars):
         """
         Ansatz for the intermediate amplitude. Equation 21 arXiv:1508.07253
         """
         Mf2 = Mf*Mf
         Mf3 = Mf*Mf2
         Mf4 = Mf*Mf3
-        return p['delta0'] + p['delta1']*Mf + p['delta2']*Mf2 + p['delta3']*Mf3 + p['delta4']*Mf4
+        return model_pars['delta0'] + model_pars['delta1']*Mf + model_pars['delta2']*Mf2 + model_pars['delta3']*Mf3 + model_pars['delta4']*Mf4
 
     def AmpIntColFitCoeff(self, p):
         """
@@ -324,9 +324,9 @@ class PhenomDInternalsAmplitude(object):
         + (0.7570782938606834 - 2.7256896890432474*eta + 7.1140380397149965*eta2)*xi2 \
         + (0.1766934149293479 - 0.7978690983168183*eta + 2.1162391502005153*eta2)*xi3
 
-    def delta0_fun(self, p, d):
+    def delta0_fun(self, delta_params, d):
         """
-        p : dict
+        delta_params
         d : dict of delta
         The following functions (delta{0,1,2,3,4}_fun) were derived
         in mathematica according to
@@ -336,14 +336,14 @@ class PhenomDInternalsAmplitude(object):
         Can be rederived by solving Equation 21 for the constraints
         given in Equations 22-26 in arXiv:1508.07253
         """
-        f1 = p['f1']
-        f2 = p['f2']
-        f3 = p['f3']
-        v1 = p['v1']
-        v2 = p['v2']
-        v3 = p['v3']
-        d1 = p['d1']
-        d2 = p['d2']
+        f1 = delta_params['f1']
+        f2 = delta_params['f2']
+        f3 = delta_params['f3']
+        v1 = delta_params['v1']
+        v2 = delta_params['v2']
+        v3 = delta_params['v3']
+        d1 = delta_params['d1']
+        d2 = delta_params['d2']
 
         f12 = d['f12']
         f13 = d['f13']
@@ -367,15 +367,15 @@ class PhenomDInternalsAmplitude(object):
         + 2*f15*f2*f3*v3 - f14*f22*f3*v3 - 4*f13*f23*f3*v3 + 3*f12*f24*f3*v3 - 4*f14*f2*f32*v3 \
         + 8*f13*f22*f32*v3 - 4*f12*f23*f32*v3) / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(f3-f2)))
 
-    def delta1_fun(self, p, d):
-        f1 = p['f1']
-        f2 = p['f2']
-        f3 = p['f3']
-        v1 = p['v1']
-        v2 = p['v2']
-        v3 = p['v3']
-        d1 = p['d1']
-        d2 = p['d2']
+    def delta1_fun(self, delta_params, d):
+        f1 = delta_params['f1']
+        f2 = delta_params['f2']
+        f3 = delta_params['f3']
+        v1 = delta_params['v1']
+        v2 = delta_params['v2']
+        v3 = delta_params['v3']
+        d1 = delta_params['d1']
+        d2 = delta_params['d2']
 
         f12 = d['f12']
         f13 = d['f13']
@@ -399,15 +399,15 @@ class PhenomDInternalsAmplitude(object):
         + 8*f12*f23*f3*v3 - 6*f1*f24*f3*v3 + 4*f14*f32*v3 - 12*f12*f22*f32*v3 + 8*f1*f23*f32*v3) \
         / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(-f2 + f3)))
 
-    def delta2_fun(self, p, d):
-        f1 = p['f1']
-        f2 = p['f2']
-        f3 = p['f3']
-        v1 = p['v1']
-        v2 = p['v2']
-        v3 = p['v3']
-        d1 = p['d1']
-        d2 = p['d2']
+    def delta2_fun(self, delta_params, d):
+        f1 = delta_params['f1']
+        f2 = delta_params['f2']
+        f3 = delta_params['f3']
+        v1 = delta_params['v1']
+        v2 = delta_params['v2']
+        v3 = delta_params['v3']
+        d1 = delta_params['d1']
+        d2 = delta_params['d2']
 
         f12 = d['f12']
         f13 = d['f13']
@@ -430,15 +430,15 @@ class PhenomDInternalsAmplitude(object):
         + f14*f3*v3 - 4*f1*f23*f3*v3 + 3*f24*f3*v3 - 8*f13*f32*v3 + 12*f12*f2*f32*v3 - 4*f23*f32*v3) \
         / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(-f2 + f3)))
 
-    def delta3_fun(self, p, d):
-        f1 = p['f1']
-        f2 = p['f2']
-        f3 = p['f3']
-        v1 = p['v1']
-        v2 = p['v2']
-        v3 = p['v3']
-        d1 = p['d1']
-        d2 = p['d2']
+    def delta3_fun(self, delta_params, d):
+        f1 = delta_params['f1']
+        f2 = delta_params['f2']
+        f3 = delta_params['f3']
+        v1 = delta_params['v1']
+        v2 = delta_params['v2']
+        v3 = delta_params['v3']
+        d1 = delta_params['d1']
+        d2 = delta_params['d2']
 
         f12 = d['f12']
         f13 = d['f13']
@@ -459,15 +459,15 @@ class PhenomDInternalsAmplitude(object):
         - 8*f12*f2*f3*v3 + 4*f1*f22*f3*v3 + 4*f12*f32*v3 - 8*f1*f2*f32*v3 + 4*f22*f32*v3) \
         / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(-f2 + f3)))
 
-    def delta4_fun(self, p, d):
-        f1 = p['f1']
-        f2 = p['f2']
-        f3 = p['f3']
-        v1 = p['v1']
-        v2 = p['v2']
-        v3 = p['v3']
-        d1 = p['d1']
-        d2 = p['d2']
+    def delta4_fun(self, delta_params, d):
+        f1 = delta_params['f1']
+        f2 = delta_params['f2']
+        f3 = delta_params['f3']
+        v1 = delta_params['v1']
+        v2 = delta_params['v2']
+        v3 = delta_params['v3']
+        d1 = delta_params['d1']
+        d2 = delta_params['d2']
 
         f12 = d['f12']
         f13 = d['f13']
@@ -483,21 +483,24 @@ class PhenomDInternalsAmplitude(object):
         + f33*v2 + f13*v3 - 3*f1*f22*v3 + 2*f23*v3 - 3*f12*f3*v3 + 6*f1*f2*f3*v3 - 3*f22*f3*v3) \
         / (pow_2_of(f1 - f2)*pow_3_of(f1 - f3)*pow_2_of(-f2 + f3)))
 
-    def ComputeDeltasFromCollocation(self, p, amp_prefactors, powers_of_pi):
+    def ComputeDeltasFromCollocation(self, p, model_pars, powers_of_pi):
         """
-        Output: None, It adds
+        Output: diction of:
         f1,f2,f3,v1,v2,v3,d1,d2
         and
-        delta0,delta1,delta2,delta3,delta4
-        to the 'p' dict
+        delta0,delta1,delta2,delta3,delta4.
+        In phenomD code this gets added to the model_pars dictionary
         Calculates delta_i's
         Method described in arXiv:1508.07253 section 'Region IIa - intermediate'
         """
+
+        delta_params = {}
+
         eta = p['eta']
         chi = p['chipn']
         # // Three evenly spaced collocation points in the interval [f1,f3].
         f1 = self.AMP_fJoin_INS # in Mf
-        f3 = p['fmaxCalc'] # in Mf
+        f3 = model_pars['fmaxCalc'] # in Mf
         dfx = (f3 - f1)/2.0 # in Mf
         f2 = f1 + dfx # in Mf
 
@@ -505,27 +508,27 @@ class PhenomDInternalsAmplitude(object):
 
         # // v1 is inspiral model evaluated at f1
         # // d1 is derivative of inspiral model evaluated at f1
-        v1 = self.AmpInsAnsatz(f1, powers_of_f1, amp_prefactors)
-        d1 = self.DAmpInsAnsatz(f1, p, powers_of_pi, powers_of_f1)
+        v1 = self.AmpInsAnsatz(f1, powers_of_f1, model_pars['amp_prefactors'])
+        d1 = self.DAmpInsAnsatz(f1, p, model_pars, powers_of_pi, powers_of_f1)
 
         # // v3 is merger-ringdown model evaluated at f3
         # // d2 is derivative of merger-ringdown model evaluated at f3
-        v3 = self.AmpMRDAnsatz(f3, p)
-        d2 = self.DAmpMRDAnsatz(f3, p)
+        v3 = self.AmpMRDAnsatz(f3, model_pars)
+        d2 = self.DAmpMRDAnsatz(f3, model_pars)
 
         # // v2 is the value of the amplitude evaluated at f2
         # // they come from the fit of the collocation points in the intermediate region
         v2 = self.AmpIntColFitCoeff(p)
 
-        # save these to the `global p dictionary'
-        self.p['f1'] = f1
-        self.p['f2'] = f2
-        self.p['f3'] = f3
-        self.p['v1'] = v1
-        self.p['v2'] = v2
-        self.p['v3'] = v3
-        self.p['d1'] = d1
-        self.p['d2'] = d2
+        # save these to the delta_params dictionary
+        delta_params['f1'] = f1
+        delta_params['f2'] = f2
+        delta_params['f3'] = f3
+        delta_params['v1'] = v1
+        delta_params['v2'] = v2
+        delta_params['v3'] = v3
+        delta_params['d1'] = d1
+        delta_params['d2'] = d2
 
         # // Now compute the delta_i's from the collocation coefficients
         # // Precompute common quantities here and pass along to delta functions.
@@ -541,11 +544,12 @@ class PhenomDInternalsAmplitude(object):
         d['f33'] = f3*d['f32']
         d['f34'] = f3*d['f33']
         d['f35'] = f3*d['f34']
-        self.p['delta0'] = self.delta0_fun(self.p, d)
-        self.p['delta1'] = self.delta1_fun(self.p, d)
-        self.p['delta2'] = self.delta2_fun(self.p, d)
-        self.p['delta3'] = self.delta3_fun(self.p, d)
-        self.p['delta4'] = self.delta4_fun(self.p, d)
+        delta_params['delta0'] = self.delta0_fun(delta_params, d)
+        delta_params['delta1'] = self.delta1_fun(delta_params, d)
+        delta_params['delta2'] = self.delta2_fun(delta_params, d)
+        delta_params['delta3'] = self.delta3_fun(delta_params, d)
+        delta_params['delta4'] = self.delta4_fun(delta_params, d)
+        return delta_params
 
 class PhenomDInternalsPhase(object):
     """docstring for PhenomDInternalsPhase"""
@@ -638,7 +642,7 @@ class PhenomDInternalsPhase(object):
         + (-0.05585343136869692 + 1.7516580039343603*eta - 5.990208965347804*eta2)*xi2 \
         + (-0.017945336522161195 + 0.5965097794825992*eta - 2.0608879367971804*eta2)*xi3
 
-    def PhiMRDAnsatzInt(self, Mf, p):
+    def PhiMRDAnsatzInt(self, Mf, model_pars):
         """
         Ansatz for the merger-ringdown phase Equation 14 arXiv:1508.07253
         """
@@ -647,17 +651,17 @@ class PhenomDInternalsPhase(object):
         # // check if this is any faster: 2 sqrts instead of one pow(x,0.75)
         fpow0_75 = sqrt(fpow1_5); # pow(f,0.75)
 
-        return -(p['alpha2']/Mf) \
-        + (4.0/3.0) * (p['alpha3'] * fpow0_75) \
-        + p['alpha1'] * Mf \
-        + p['alpha4'] * arctan((Mf - p['alpha5'] * p['fRD']) / p['fDM'])
+        return -(model_pars['alpha2']/Mf) \
+        + (4.0/3.0) * (model_pars['alpha3'] * fpow0_75) \
+        + model_pars['alpha1'] * Mf \
+        + model_pars['alpha4'] * arctan((Mf - model_pars['alpha5'] * model_pars['fRD']) / model_pars['fDM'])
 
-    def DPhiMRD(self, Mf, p):
+    def DPhiMRD(self, Mf, model_pars, eta):
         """
         First frequency derivative of PhiMRDAnsatzInt
         """
-        return (p['alpha1'] + p['alpha2']/pow_2_of(Mf) + p['alpha3']/(Mf**0.25) + \
-        p['alpha4']/(p['fDM']*(1 + pow_2_of(Mf - p['alpha5'] * p['fRD'])/pow_2_of(p['fDM'])))) / p['eta']
+        return (model_pars['alpha1'] + model_pars['alpha2']/pow_2_of(Mf) + model_pars['alpha3']/(Mf**0.25) + \
+        model_pars['alpha4']/(model_pars['fDM']*(1 + pow_2_of(Mf - model_pars['alpha5'] * model_pars['fRD'])/pow_2_of(model_pars['fDM'])))) / eta
 
     # ///////////////////////////// Phase: Intermediate functions /////////////////////////////
     #
@@ -715,31 +719,30 @@ class PhenomDInternalsPhase(object):
         + (7.157371250566708e-6 - 0.000055780000112270685*eta + 0.00019142082884072178*eta2)*xi2 \
         + (5.447166261464217e-6 - 0.00003220610095021982*eta + 0.00007974016714984341*eta2)*xi3
 
-    def PhiIntAnsatz(self, Mf, p):
+    def PhiIntAnsatz(self, Mf, model_pars):
         """
         ansatz for the intermediate phase defined by Equation 16 arXiv:1508.07253
         """
         # // 1./eta in paper omitted and put in when need in the functions:
         # // ComputeIMRPhenDPhaseConnectionCoefficients
         # // IMRPhenDPhase
-        return  p['beta1']*Mf - p['beta3']/(3.*pow_3_of(Mf)) + p['beta2']*log(Mf)
+        return  model_pars['beta1']*Mf - model_pars['beta3']/(3.*pow_3_of(Mf)) + model_pars['beta2']*log(Mf)
 
-    def DPhiIntAnsatz(self, Mf, p):
+    def DPhiIntAnsatz(self, Mf, model_pars, eta):
         """
         First frequency derivative of PhiIntAnsatz
         (this time with 1./eta explicitly factored in)
         """
-        return (p['beta1'] + p['beta3']/pow_4_of(Mf) + p['beta2']/Mf) / p['eta']
+        return (model_pars['beta1'] + model_pars['beta3']/pow_4_of(Mf) + model_pars['beta2']/Mf) / eta
 
-    def DPhiIntTemp(self, Mf, p, C2Int):
+    def DPhiIntTemp(self, Mf, model_pars, eta, C2Int):
         """
         temporary instance of DPhiIntAnsatz used when computing
         coefficients to make the phase C(1) continuous between regions.
         """
-        eta = p['eta']
-        beta1 = p['beta1']
-        beta2 = p['beta2']
-        beta3 = p['beta3']
+        beta1 = model_pars['beta1']
+        beta2 = model_pars['beta2']
+        beta3 = model_pars['beta3']
 
         return C2Int + (beta1 + beta3/pow_4_of(Mf) + beta2/Mf)/eta
 
@@ -942,7 +945,7 @@ class PhenomDInternalsPhase(object):
 
         return pfa
 
-    def init_phi_ins_prefactors(self, p, pn, powers_of_pi):
+    def init_phi_ins_prefactors(self, model_pars, powers_of_pi):
         """helper function for phase
         p : dict
         pn : dict of PN coefficients from SimInspiralTaylorF2AlignedPhasing
@@ -950,12 +953,14 @@ class PhenomDInternalsPhase(object):
         output:
         output a dictionary called prefactors"""
 
+        pn = model_pars['pn']
+
         prefactors = {}
 
-        sigma1 = p['sigma1']
-        sigma2 = p['sigma2']
-        sigma3 = p['sigma3']
-        sigma4 = p['sigma4']
+        sigma1 = model_pars['sigma1']
+        sigma2 = model_pars['sigma2']
+        sigma3 = model_pars['sigma3']
+        sigma4 = model_pars['sigma4']
         Pi = pi
         LAL_PI_4 = pi / 4.
 
@@ -978,7 +983,7 @@ class PhenomDInternalsPhase(object):
 
         return prefactors
 
-    def PhiInsAnsatzInt(self, Mf, p, pn, prefactors, powers_of_Mf, powers_of_pi):
+    def PhiInsAnsatzInt(self, Mf, eta, prefactors, powers_of_Mf, powers_of_pi):
         """
         input
         Mf : dimensionless frequency
@@ -986,7 +991,6 @@ class PhenomDInternalsPhase(object):
         prefactors : dict
                 output from init_phi_ins_prefactors function
         p : dict
-        pn : dict
         Ansatz for the inspiral phase.
         We call the LAL TF2 coefficients here.
         The exact values of the coefficients used are given
@@ -1013,12 +1017,12 @@ class PhenomDInternalsPhase(object):
         phasing += ( prefactors['one'] * Mf + prefactors['four_thirds'] * powers_of_Mf.four_thirds \
         		   + prefactors['five_thirds'] * powers_of_Mf.five_thirds \
         		   + prefactors['two'] * powers_of_Mf.two \
-        		 ) / p['eta']
+        		 ) / eta
 
         return phasing
 
 
-    def DPhiInsAnsatzInt(self, Mf, powers_of_pi, prefactors, p, pn):
+    def DPhiInsAnsatzInt(self, Mf, powers_of_pi, model_pars, eta):
         """
         input
         Mf : dimensionless frequency
@@ -1029,10 +1033,13 @@ class PhenomDInternalsPhase(object):
         pn : dict
         First frequency derivative of PhiInsAnsatzInt
         """
-        sigma1 = p['sigma1']
-        sigma2 = p['sigma2']
-        sigma3 = p['sigma3']
-        sigma4 = p['sigma4']
+
+        pn = model_pars['pn']
+
+        sigma1 = model_pars['sigma1']
+        sigma2 = model_pars['sigma2']
+        sigma3 = model_pars['sigma3']
+        sigma4 = model_pars['sigma4']
         Pi = pi
 
         # // Assemble PN phasing series
@@ -1065,16 +1072,13 @@ class PhenomDInternalsPhase(object):
         + sigma2 * v / powers_of_pi.third \
         + sigma3 * v2 / powers_of_pi.two_thirds \
         + (sigma4/Pi) * v3 \
-        ) / p['eta']
+        ) / eta
 
         return Dphasing
 
-    def ComputeIMRPhenDPhaseConnectionCoefficients(self, p, pn, prefactors, powers_of_pi):
+    def ComputeIMRPhenDPhaseConnectionCoefficients(self, eta, model_pars, powers_of_pi):
         """
         p : dict
-        pn : dict
-        prefactors : dict
-                output from init_phi_ins_prefactors function
 
         returns
             C1Int, C2Int, C1MRD, C2MRD
@@ -1083,12 +1087,13 @@ class PhenomDInternalsPhase(object):
         such that they are c^1 continuous at the transition frequencies
         Defined in VIII. Full IMR Waveforms arXiv:1508.07253
         """
-        eta = p['eta']
 
         # // Transition frequencies
         # // Defined in VIII. Full IMR Waveforms arXiv:1508.07253
-        p['fInsJoin']=self.PHI_fJoin_INS
-        p['fMRDJoin']=0.5*p['fRD']
+        fInsJoin=self.PHI_fJoin_INS
+        fMRDJoin=0.5*model_pars['fRD']
+
+        prefactors = model_pars['phi_prefactors']
 
         # // Compute C1Int and C2Int coeffs
         # // Equations to solve for to get C(1) continuous join
@@ -1097,13 +1102,13 @@ class PhenomDInternalsPhase(object):
         # // PhiIns (fInsJoin)  =   PhiInt (fInsJoin) + C1Int + C2Int fInsJoin
         # // PhiIns'(fInsJoin)  =   PhiInt'(fInsJoin) + C2Int
 
-        DPhiIns = self.DPhiInsAnsatzInt(p['fInsJoin'], powers_of_pi, prefactors, p, pn)
-        DPhiInt = self.DPhiIntAnsatz(p['fInsJoin'], p)
+        DPhiIns = self.DPhiInsAnsatzInt(fInsJoin, powers_of_pi, model_pars, eta)
+        DPhiInt = self.DPhiIntAnsatz(fInsJoin, model_pars, eta)
         C2Int = DPhiIns - DPhiInt
 
-        powers_of_fInsJoin = UsefulPowers(p['fInsJoin'])
-        C1Int = self.PhiInsAnsatzInt(p['fInsJoin'], p, pn, prefactors, powers_of_fInsJoin, powers_of_pi) \
-        - 1.0/eta * self.PhiIntAnsatz(p['fInsJoin'], p) - C2Int * p['fInsJoin']
+        powers_of_fInsJoin = UsefulPowers(fInsJoin)
+        C1Int = self.PhiInsAnsatzInt(fInsJoin, eta, prefactors, powers_of_fInsJoin, powers_of_pi) \
+        - 1.0/eta * self.PhiIntAnsatz(fInsJoin, model_pars) - C2Int * fInsJoin
 
         # // Compute C1MRD and C2MRD coeffs
         # // Equations to solve for to get C(1) continuous join
@@ -1113,11 +1118,11 @@ class PhenomDInternalsPhase(object):
         # // PhiInsInt (fMRDJoin)  =   PhiMRD (fMRDJoin) + C1MRD + C2MRD fMRDJoin
         # // PhiInsInt'(fMRDJoin)  =   PhiMRD'(fMRDJoin) + C2MRD
         # // temporary Intermediate Phase function to Join up the Merger-Ringdown
-        PhiIntTempVal = 1.0/eta * self.PhiIntAnsatz(p['fMRDJoin'], p) + C1Int + C2Int*p['fMRDJoin']
-        DPhiIntTempVal = self.DPhiIntTemp(p['fMRDJoin'], p, C2Int)
-        DPhiMRDVal = self.DPhiMRD(p['fMRDJoin'], p)
+        PhiIntTempVal = 1.0/eta * self.PhiIntAnsatz(fMRDJoin, model_pars) + C1Int + C2Int*fMRDJoin
+        DPhiIntTempVal = self.DPhiIntTemp(fMRDJoin, model_pars, eta, C2Int)
+        DPhiMRDVal = self.DPhiMRD(fMRDJoin, model_pars, eta)
         C2MRD = DPhiIntTempVal - DPhiMRDVal
-        C1MRD = PhiIntTempVal - 1.0/eta * self.PhiMRDAnsatzInt(p['fMRDJoin'], p) - C2MRD*p['fMRDJoin']
+        C1MRD = PhiIntTempVal - 1.0/eta * self.PhiMRDAnsatzInt(fMRDJoin, model_pars) - C2MRD*fMRDJoin
         return C1Int, C2Int, C1MRD, C2MRD
 
 class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
@@ -1127,6 +1132,44 @@ class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
 
 class PhenomD(PhenomDInternals):
     """docstring for PhenomD"""
+
+    #sets phenomD CONSTANTS
+    #https://github.com/lscsoft/lalsuite/blob/master/lalsimulation/src/LALSimIMRPhenomD.h
+
+    # /* CONSTANTS */
+
+    # /**
+    #  * Dimensionless frequency (Mf) at which define the end of the waveform
+    #  */
+    Mf_CUT = 0.2
+
+    # /**
+    #  * Dimensionless frequency (Mf) at which the inspiral amplitude
+    #  * switches to the intermediate amplitude
+    #  */
+    AMP_fJoin_INS = 0.014
+
+    # /**
+    #  * Dimensionless frequency (Mf) at which the inspiral phase
+    #  * switches to the intermediate phase
+    #  */
+    PHI_fJoin_INS = 0.018
+
+    # /**
+    #   * Minimal final spin value below which the waveform might behave pathological
+    #   * because the ISCO frequency is too low. For more details, see the review wiki
+    #   * page https://www.lsc-group.phys.uwm.edu/ligovirgo/cbcnote/WaveformsReview/IMRPhenomDCodeReview/PhenD_LargeNegativeSpins
+    #   */
+    #NOTE: This is not implemented in this python version
+    MIN_FINAL_SPIN = -0.717
+
+    # /**
+    #   * A large mass ratio causes memory over-runs.
+    #   * We test and put the limit an order of magnitude above that of previous waveform models (which were around q=100).
+    #   */
+    #NOTE: This is not implemented in this python version
+    MAX_ALLOWED_MASS_RATIO = 5000
+
     def __init__(self,  m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0.):
         """
         input:
@@ -1140,6 +1183,17 @@ class PhenomD(PhenomDInternals):
         distance (m) : Default 1e6 * Constants.PC_SI = 1 mega parsec
         fRef (reference frequency Hz)
         phiRef (orbital phase at fRef)"""
+
+        #TODO: Refactor this PhenomD code.
+        #so that you can call something like
+        #self.generate_phenomD_model_parameters()
+        #and it will populate self.model_parameters()
+        #containing things like alpha1, alpha2, etc...
+
+        # enforce m1 >= m2 and chi1 is on m1
+        if m1<m2: # swap spins and masses
+            chi1z, chi2z = chi2z, chi1z
+            m1, m2 = m2, m1
 
         self.p                = {}
         self.p['m1']          = float(m1)
@@ -1156,124 +1210,107 @@ class PhenomD(PhenomDInternals):
         self.p['Mtot'], self.p['eta'] = M_eta_m1_m2(self.p['m1'], self.p['m2'])
         self.p['chipn'] = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
 
-        # Compute the amplitude pre-factor
-        self.p['amp0'] = 2. * sqrt(5. / (64.*pi)) * self.p['Mtot'] * Constants.MRSUN_SI * self.p['Mtot'] * Constants.MTSUN_SI / self.p['distance']
-
-        self.M_sec = self.p['Mtot'] * Constants.MTSUN_SI # Conversion factor Hz -> dimensionless frequency
-
-        self.define_phenomD_constants()
-
-        # Default PhenomD values
-        if self.p['f_max'] == 0. : self.p['f_max'] = self.f_CUT / self.M_sec # converted from Mf to Hz
-        if self.p['fRef'] == 0.  : self.p['fRef'] = self.p['f_min']
-
         #initialise UsefulPowers instances
         self.powers_of_pi = UsefulPowers(pi)
 
+        #model_pars is a dict containing all? the internal variables of phenomD
+        #final spin is a variable because phenomP uses a different final spin to
+        #phenomD
+        self.model_pars = self.compute_model_parameters(self.p, "FinalSpin0815")
+
+
+        #end of __init__()
+
+    def compute_model_parameters(self, p, finspin_func):
+        """
+        compute_model_parameters(p, finspin_func)
+        p : dict
+        finspin_func : string, name of final spin function. Used in phenomP as it
+        uses a different final spin function.
+        """
+
+        model_pars = {}
+
+        # Compute the amplitude pre-factor
+        model_pars['amp0'] = 2. * sqrt(5. / (64.*pi)) * p['Mtot'] * Constants.MRSUN_SI * p['Mtot'] * Constants.MTSUN_SI / p['distance']
+
+        model_pars['M_sec'] = p['Mtot'] * Constants.MTSUN_SI # Conversion factor Hz -> dimensionless frequency
+
+        # Default PhenomD values
+        if p['f_max'] == 0. : p['f_max'] = self.Mf_CUT / model_pars['M_sec'] # converted from Mf to Hz
+        if p['fRef'] == 0.  : p['fRef'] = p['f_min']
+
         # compute prediction of ringdown frequency
-        self.p['finspin'] = FinalSpin0815(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
-        self.p['fRD']     = fring(self.p['eta'], self.p['chi1z'], self.p['chi2z'], self.p['finspin'])
-        self.p['fDM']     = fdamp(self.p['eta'], self.p['chi1z'], self.p['chi2z'], self.p['finspin'])
+
+        if finspin_func == "FinalSpin0815":
+            model_pars['finspin'] = FinalSpin0815(p['eta'], p['chi1z'], p['chi2z'])
+        else:
+            raise ValueError('finspin_func = {0} not recognised'.format(finspin_func))
+
+        model_pars['fRD']     = fring(p['eta'], p['chi1z'], p['chi2z'], model_pars['finspin'])
+        model_pars['fDM']     = fdamp(p['eta'], p['chi1z'], p['chi2z'], model_pars['finspin'])
 
         #inspiral amplitude coeffs
-        self.p['rho1'] = self.rho1_fun(self.p)
-        self.p['rho2'] = self.rho2_fun(self.p)
-        self.p['rho3'] = self.rho3_fun(self.p)
+        model_pars['rho1'] = self.rho1_fun(p)
+        model_pars['rho2'] = self.rho2_fun(p)
+        model_pars['rho3'] = self.rho3_fun(p)
 
         #inspiral amplitude prefactors
-        self.amp_prefactors = super(PhenomDInternals, self).init_amp_ins_prefactors(self.p, self.powers_of_pi)
+        #only need to pass rho1, rho2 and rho3 from model_pars
+        model_pars['amp_prefactors'] = super(PhenomDInternals, self).init_amp_ins_prefactors(p, model_pars, self.powers_of_pi)
 
         #merger-ringdown amplitude coeffs
-        self.p['gamma1'] = self.gamma1_fun(self.p)
-        self.p['gamma2'] = self.gamma2_fun(self.p)
-        self.p['gamma3'] = self.gamma3_fun(self.p)
+        model_pars['gamma1'] = self.gamma1_fun(p)
+        model_pars['gamma2'] = self.gamma2_fun(p)
+        model_pars['gamma3'] = self.gamma3_fun(p)
 
         # fmaxCalc is the peak of the merger-ringdown amplitude function
-        self.p['fmaxCalc'] = self.fmaxCalc(self.p)
+        model_pars['fmaxCalc'] = self.fmaxCalc(model_pars)
 
         #intermediate amplitude coeffs
-        self.ComputeDeltasFromCollocation(self.p, self.amp_prefactors, self.powers_of_pi)
+        model_pars.update(self.ComputeDeltasFromCollocation(p, model_pars, self.powers_of_pi))
 
         # populate phase phenom coefficient dictionaries
         #inspiral PN coefficients
-        self.pn = self.SimInspiralTaylorF2AlignedPhasing(self.p)
+        model_pars['pn'] = self.SimInspiralTaylorF2AlignedPhasing(p)
 
         #inspiral phase coeffs
-        self.p['sigma1'] = self.sigma1Fit(self.p)
-        self.p['sigma2'] = self.sigma2Fit(self.p)
-        self.p['sigma3'] = self.sigma3Fit(self.p)
-        self.p['sigma4'] = self.sigma4Fit(self.p)
+        model_pars['sigma1'] = self.sigma1Fit(p)
+        model_pars['sigma2'] = self.sigma2Fit(p)
+        model_pars['sigma3'] = self.sigma3Fit(p)
+        model_pars['sigma4'] = self.sigma4Fit(p)
 
         #inspiral phase prefactors
-        self.phi_prefactors = self.init_phi_ins_prefactors(self.p, self.pn, self.powers_of_pi)
+        model_pars['phi_prefactors'] = self.init_phi_ins_prefactors(model_pars, self.powers_of_pi)
 
         #intermediate phase coeffs
-        self.p['beta1'] = self.beta1Fit(self.p)
-        self.p['beta2'] = self.beta2Fit(self.p)
-        self.p['beta3'] = self.beta3Fit(self.p)
+        model_pars['beta1'] = self.beta1Fit(p)
+        model_pars['beta2'] = self.beta2Fit(p)
+        model_pars['beta3'] = self.beta3Fit(p)
         #merger-ringdown phase coeffs
-        self.p['alpha1'] = self.alpha1Fit(self.p)
-        self.p['alpha2'] = self.alpha2Fit(self.p)
-        self.p['alpha3'] = self.alpha3Fit(self.p)
-        self.p['alpha4'] = self.alpha4Fit(self.p)
-        self.p['alpha5'] = self.alpha5Fit(self.p)
+        model_pars['alpha1'] = self.alpha1Fit(p)
+        model_pars['alpha2'] = self.alpha2Fit(p)
+        model_pars['alpha3'] = self.alpha3Fit(p)
+        model_pars['alpha4'] = self.alpha4Fit(p)
+        model_pars['alpha5'] = self.alpha5Fit(p)
 
         #compute phase connection coefficients
-        self.p['C1Int'], self.p['C2Int'], self.p['C1MRD'], self.p['C2MRD'] = self.ComputeIMRPhenDPhaseConnectionCoefficients(self.p, self.pn, self.phi_prefactors, self.powers_of_pi)
+        model_pars['C1Int'], model_pars['C2Int'], model_pars['C1MRD'], model_pars['C2MRD'] = self.ComputeIMRPhenDPhaseConnectionCoefficients(p['eta'], model_pars, self.powers_of_pi)
 
         # compute time shift such that the ifft of htilde has it's peak
         # amplitude (near) t=0. (only approximate)
-        self.p['t0'] = self.computetimeshift(self.p)
+        model_pars['t0'] = self.computetimeshift(model_pars, p['eta'])
 
         # // incorporating fRef
-        self.p['MfRef'] = self.M_sec * self.p['fRef']
-        powers_of_fRef = UsefulPowers(self.p['MfRef'])
-        self.p['phi_fRef'] = self.IMRPhenomDPhase(self.p['MfRef'], self.p, self.pn, powers_of_fRef, self.phi_prefactors)
+        model_pars['MfRef'] = model_pars['M_sec'] * p['fRef']
+        powers_of_fRef = UsefulPowers(model_pars['MfRef'])
+        model_pars['phi_fRef'] = self.IMRPhenomDPhase(model_pars['MfRef'], p['eta'], model_pars, powers_of_fRef)
         # // factor of 2 b/c phi0 is orbital phase
-        self.p['phi_precalc'] = 2.*self.p['phiRef'] + self.p['phi_fRef']
-        #end of __init__()
+        model_pars['phi_precalc'] = 2.*p['phiRef'] + model_pars['phi_fRef']
 
-    def define_phenomD_constants(self):
-        """
-        sets phenomD CONSTANTS
-        https://github.com/lscsoft/lalsuite/blob/master/lalsimulation/src/LALSimIMRPhenomD.h
-        """
-        # /* CONSTANTS */
+        return model_pars
 
-        # /**
-        #  * Dimensionless frequency (Mf) at which define the end of the waveform
-        #  */
-        self.f_CUT = 0.2
-
-        # /**
-        #  * Dimensionless frequency (Mf) at which the inspiral amplitude
-        #  * switches to the intermediate amplitude
-        #  */
-        self.AMP_fJoin_INS = 0.014
-
-        # /**
-        #  * Dimensionless frequency (Mf) at which the inspiral phase
-        #  * switches to the intermediate phase
-        #  */
-        self.PHI_fJoin_INS = 0.018
-
-        # /**
-        #   * Minimal final spin value below which the waveform might behave pathological
-        #   * because the ISCO frequency is too low. For more details, see the review wiki
-        #   * page https://www.lsc-group.phys.uwm.edu/ligovirgo/cbcnote/WaveformsReview/IMRPhenomDCodeReview/PhenD_LargeNegativeSpins
-        #   */
-        #NOTE: This is not implemented in this python version
-        self.MIN_FINAL_SPIN = -0.717
-
-        # /**
-        #   * A large mass ratio causes memory over-runs.
-        #   * We test and put the limit an order of magnitude above that of previous waveform models (which were around q=100).
-        #   */
-        #NOTE: This is not implemented in this python version
-        self.MAX_ALLOWED_MASS_RATIO = 5000
-        pass
-
-    def IMRPhenomDAmplitude(self, Mf, p, powers_of_Mf, amp_prefactors):
+    def IMRPhenomDAmplitude(self, Mf, model_pars, powers_of_Mf):
         """Call ComputeIMRPhenomDAmplitudeCoefficients() first!
         This function computes the IMR amplitude given phenom coefficients.
         Defined in VIII. Full IMR Waveforms arXiv:1508.07253
@@ -1283,7 +1320,9 @@ class PhenomD(PhenomDInternals):
 
         # Transition frequencies
         fInsJoin = self.AMP_fJoin_INS
-        fMRDJoin = p['fmaxCalc']
+        fMRDJoin = model_pars['fmaxCalc']
+
+        amp_prefactors = model_pars['amp_prefactors']
 
         AmpPreFac = amp_prefactors['PNamp0'] / powers_of_Mf.seven_sixths
         # split the calculation to just 1 of 3 possible mutually exclusive ranges
@@ -1292,40 +1331,42 @@ class PhenomD(PhenomDInternals):
             AmpIns = AmpPreFac * self.AmpInsAnsatz(Mf, powers_of_Mf, amp_prefactors)
             return AmpIns
         elif (Mf >= fMRDJoin):	# MRD range
-            AmpMRD = AmpPreFac * self.AmpMRDAnsatz(Mf, p)
+            AmpMRD = AmpPreFac * self.AmpMRDAnsatz(Mf, model_pars)
             return AmpMRD
         else:
             #	Intermediate range
-            AmpInt = AmpPreFac * self.AmpIntAnsatz(Mf, p)
+            AmpInt = AmpPreFac * self.AmpIntAnsatz(Mf, model_pars)
             return AmpInt
 
-    def IMRPhenomDPhase(self, Mf, p, pn, powers_of_Mf, phi_prefactors):
+    def IMRPhenomDPhase(self, Mf, eta, model_pars, powers_of_Mf):
         """
         This function computes the IMR phase given phenom coefficients.
         Defined in VIII. Full IMR Waveforms arXiv:1508.07253
         """
         # Defined in VIII. Full IMR Waveforms arXiv:1508.07253
         # The inspiral, intermendiate and merger-ringdown phase parts
+        pn = model_pars['pn']
 
         # split the calculation to just 1 of 3 possible mutually exclusive ranges
         fInsJoin = self.PHI_fJoin_INS
-        fMRDJoin = 0.5*p['fRD']
+        fMRDJoin = 0.5*model_pars['fRD']
+        phi_prefactors = model_pars['phi_prefactors']
 
         if (Mf <= fInsJoin):	# Inspiral rangee
-            PhiIns = self.PhiInsAnsatzInt(Mf, p, pn, phi_prefactors, powers_of_Mf, self.powers_of_pi)
+            PhiIns = self.PhiInsAnsatzInt(Mf, eta, phi_prefactors, powers_of_Mf, self.powers_of_pi)
             return PhiIns
         elif (Mf >= fMRDJoin):	# MRD range
-            PhiMRD = 1.0/p['eta'] * self.PhiMRDAnsatzInt(Mf, p) + p['C1MRD'] + p['C2MRD'] * Mf
+            PhiMRD = 1.0/eta * self.PhiMRDAnsatzInt(Mf, model_pars) + model_pars['C1MRD'] + model_pars['C2MRD'] * Mf
             return PhiMRD
         else:
             #	Intermediate range
-            PhiInt = 1.0/p['eta'] * self.PhiIntAnsatz(Mf, p) + p['C1Int'] + p['C2Int'] * Mf
+            PhiInt = 1.0/eta * self.PhiIntAnsatz(Mf, model_pars) + model_pars['C1Int'] + model_pars['C2Int'] * Mf
             return PhiInt
 
-    def computetimeshift(self, p):
+    def computetimeshift(self, model_pars, eta):
         # //time shift so that peak amplitude is approximately at t=0
         # //For details see https://www.lsc-group.phys.uwm.edu/ligovirgo/cbcnote/WaveformsReview/IMRPhenomDCodeReview/timedomain
-        t0 = self.DPhiMRD(p['fmaxCalc'], p)
+        t0 = self.DPhiMRD(model_pars['fmaxCalc'], model_pars, eta)
         return t0
 
     def IMRPhenomDGenerateFDSingleFrequencyPoint(self, Mf):
@@ -1337,12 +1378,12 @@ class PhenomD(PhenomDInternals):
             htilde at Mf
         """
         powers_of_Mf = UsefulPowers(Mf)
-        amp   = self.IMRPhenomDAmplitude(Mf, self.p, powers_of_Mf, self.amp_prefactors)
-        phase = self.IMRPhenomDPhase(Mf, self.p, self.pn, powers_of_Mf, self.phi_prefactors)
+        amp   = self.IMRPhenomDAmplitude(Mf, self.model_pars, powers_of_Mf)
+        phase = self.IMRPhenomDPhase(Mf, self.p['eta'], self.model_pars, powers_of_Mf)
         # finally supply time and phase shift for fRef and approximately t=0 at amplitude max in time domain.
-        phase -= self.p['t0']*(Mf-self.p['MfRef']) + self.p['phi_precalc']
+        phase -= self.model_pars['t0']*(Mf-self.model_pars['MfRef']) + self.model_pars['phi_precalc']
         #amp0 scales to physical distance and correct units for strain
-        htilde = self.p['amp0'] * amp * exp(-1.j * phase)
+        htilde = self.model_pars['amp0'] * amp * exp(-1.j * phase)
         return htilde
 
     def IMRPhenomDGenerateFD(self):
@@ -1357,7 +1398,7 @@ class PhenomD(PhenomDInternals):
         self.htilde = zeros(len(self.flist_Hz), dtype=complex)
         for i in range(len(self.flist_Hz)):
             #waveform generation is in terms of Mf so need to convert from Hz to Mf
-            Mf = self.flist_Hz[i] * self.M_sec
+            Mf = self.flist_Hz[i] * self.model_pars['M_sec']
             self.htilde[i] = self.IMRPhenomDGenerateFDSingleFrequencyPoint(Mf)
 
     def getampandphase(self, htilde):

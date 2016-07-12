@@ -8,6 +8,7 @@ class Constants:
     MSUN_SI = 1.9885469549614615e+30
     MRSUN_SI = 1476.6250614046494
     PC_SI = 3.085677581491367e+16
+    LAL_PI = 3.141592653589793 #TODO: replace instances of pi in code with LAL_PI
 
 
 def ceilpow2(n):
