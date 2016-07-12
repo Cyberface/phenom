@@ -1141,6 +1141,17 @@ class PhenomD(PhenomDInternals):
         fRef (reference frequency Hz)
         phiRef (orbital phase at fRef)"""
 
+        #TODO: Refactor this PhenomD code.
+        #so that you can call something like
+        #self.generate_phenomD_model_parameters()
+        #and it will populate self.model_parameters()
+        #containing things like alpha1, alpha2, etc...
+
+        # enforce m1 >= m2 and chi1 is on m1
+        if m1<m2: # swap spins and masses
+            chi1z, chi2z = chi2z, chi1z
+            m1, m2 = m2, m1
+
         self.p                = {}
         self.p['m1']          = float(m1)
         self.p['m2']          = float(m2)
