@@ -2,7 +2,7 @@ from __future__ import division
 
 from phenom.waveform.waveform import Waveform
 from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, pow_2_of, pow_3_of, pow_4_of, Constants
-from phenom.utils.remnant import fring, fdamp, FinalSpin0815
+from phenom.utils.remnant import fring, fdamp, FinalSpin0815, FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH
 from numpy import sqrt, pi, arange, zeros, exp, fabs, log, arctan, angle, unwrap, absolute
 
 class PhenomDInternalsAmplitude(object):
@@ -1170,7 +1170,7 @@ class PhenomD(PhenomDInternals):
     #NOTE: This is not implemented in this python version
     MAX_ALLOWED_MASS_RATIO = 5000
 
-    def __init__(self,  m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0., finspin_func="FinalSpin0815"):
+    def __init__(self,  m1=10., m2=10., chi1z=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0., finspin_func="FinalSpin0815", **kwargs):
         """
         input:
         m1 (Msun)
@@ -1206,6 +1206,11 @@ class PhenomD(PhenomDInternals):
         self.p['distance']    = float(distance)
         self.p['fRef']        = float(fRef)
         self.p['phiRef']      = float(phiRef)
+
+        #TODO: This will eventually be chip when I write the
+        #'transform to model parameters' function
+        if "chi1x" in kwargs:
+            self.p['chi1x'] = float(kwargs['chi1x'])
 
         self.p['Mtot'], self.p['eta'] = M_eta_m1_m2(self.p['m1'], self.p['m2'])
         self.p['chipn'] = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
@@ -1245,6 +1250,11 @@ class PhenomD(PhenomDInternals):
 
         if finspin_func == "FinalSpin0815":
             model_pars['finspin'] = FinalSpin0815(p['eta'], p['chi1z'], p['chi2z'])
+        elif finspin_func == "FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH":
+            model_pars['finspin'] = FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(p['m1'], p['m2'], p['chi1x'], p['chi1z'], p['chi2z'])
+            if( absolute(model_pars['finspin']) > 1.0 ):
+                print("Warning: final spin magnitude {0} > 1. Setting final spin magnitude = 1.".format(model_pars['finspin']))
+                model_pars['finspin'] = copysign(1.0, model_pars['finspin'])
         else:
             raise ValueError('finspin_func = {0} not recognised'.format(finspin_func))
 

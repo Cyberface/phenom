@@ -95,17 +95,19 @@ def fdamp(eta, chi1, chi2, finspin):
 
     return ifdamp(finspin) / (1.0 - EradRational0815(eta, chi1, chi2))
 
-"""
-Wrapper for final-spin formula based on:
-- IMRPhenomD's FinalSpin0815() for aligned spins.
 
-We use their convention m1>m2
-and put <b>all in-plane spin on the larger BH</b>.
-
-In the aligned limit return the FinalSpin0815 value.
-"""
 def FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(m1, m2, chi1x, chi1z, chi2z):
+    #TODO: This function needs to take chip as it's parameter.
+    #TODO: Need to write a function that takes in chi1x,...chi2z, etc and returns chip etc.
     """
+    Wrapper for final-spin formula based on:
+    - IMRPhenomD's FinalSpin0815() for aligned spins.
+
+    We use their convention m1>m2
+    and put <b>all in-plane spin on the larger BH</b>.
+
+    In the aligned limit return the FinalSpin0815 value.
+
     m1     #/**< Mass of companion 1 (solar masses) */
     m2     #/**< Mass of companion 2 (solar masses) */
     chi1x  #/**< Dimensionless spin in the orbital plane */

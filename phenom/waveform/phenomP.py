@@ -5,21 +5,13 @@ from phenom.utils.utils import M_eta_m1_m2, chipn, Constants, chieffPH
 from phenom.waveform import PhenomD
 from phenom.pn.pn import PhenomPAlpha, PhenomPBeta, PhenomPEpsilon
 
-from numpy import exp
+from numpy import exp, arange, zeros
 
 class PhenomP():
 
 
     #TODO:
-    #1. code final spin formula
-    #   // PhenomD uses FinalSpin0815() to calculate the final spin if the spins are aligned.
-    #   // We use a generalized version of FinalSpin0815() that includes the in-plane spin chip.
-    #   finspin = FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(m1, m2, chi1_l, chi2_l, chip);
-    #   if( fabs(finspin) > 1.0 ) {
-    #     XLAL_PRINT_WARNING("Warning: final spin magnitude %g > 1. Setting final spin magnitude = 1.", finspin);
-    #     finspin = copysign(1.0, finspin);
-    #   }
-    #2. spherical harmonics
+    #1. spherical harmonics
 
     # highest frequency the model will go to. Inherited from PhenomD at the moment
     # Dimensionless frequency (Mf) at which define the end of the waveform
@@ -42,8 +34,6 @@ class PhenomP():
         phiRef (orbital phase at fRef)"""
 
         # NOTE PhenomP in LAL assumes that m2>m1. We use the opposite convention here!
-
-
 
         # enforce m1 >= m2 and chi1 is on m1
         if m1<m2: # swap spins and masses
@@ -105,10 +95,18 @@ class PhenomP():
         print alpha_at_omega_Ref
         print epsilon_at_omega_Ref
 
-
-
-
         #TODO: Code up the spherical harmonics into a class
+
+        omega_flist_hz = arange(self.p['f_min'], self.p['f_max'], self.p['delta_f']) * Constants.LAL_PI
+        self.alpha = zeros(len(omega_flist_hz))
+        self.epsilon = zeros(len(omega_flist_hz))
+        for i in range(len(omega_flist_hz)):
+            omega = omega_flist_hz[i] * self.M_sec
+            self.alpha[i] = self._alpha_precessing_angle(omega, self.p)
+            self.epsilon[i] = self._epsilon_precessing_angle(omega, self.p)
+
+        self.alpha -= alpha_at_omega_Ref
+        self.epsilon -= epsilon_at_omega_Ref
 
         pass
 
@@ -130,9 +128,9 @@ class PhenomP():
                     distance=p['distance'],
                     # fRef=0., phiRef=0.)
                     fRef=p['fRef'], phiRef=p['phiRef'],
-                    finspin_func="FinalSpin0815")
-        #TODO: CODE UP THE PHENOMP FINAL SPIN FUNCTION AND SUBSTITUTE IT IN ABOVE
-
+                    finspin_func="FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH",
+                    chi1x=p['chi1x'])
+        print "finspin = {0}".format(ph.model_pars['finspin'])
         #could change this to generate at a single frequency point.
         ph.IMRPhenomDGenerateFD()
         ph.getampandphase(ph.htilde)
