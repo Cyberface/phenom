@@ -96,8 +96,7 @@ def fdamp(eta, chi1, chi2, finspin):
     return ifdamp(finspin) / (1.0 - EradRational0815(eta, chi1, chi2))
 
 
-def FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(m1, m2, chi1x, chi1z, chi2z):
-    #TODO: This function needs to take chip as it's parameter.
+def FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(m1, m2, chip, chi1z, chi2z):
     #TODO: Need to write a function that takes in chi1x,...chi2z, etc and returns chip etc.
     """
     Wrapper for final-spin formula based on:
@@ -110,7 +109,7 @@ def FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(m1, m2, chi1x, chi1z, chi
 
     m1     #/**< Mass of companion 1 (solar masses) */
     m2     #/**< Mass of companion 2 (solar masses) */
-    chi1x  #/**< Dimensionless spin in the orbital plane */
+    chip   #/**< chip parameter, Eq. 3.4 PhysRevD.91.024043 */
     chi1z  #/**< Aligned spin of BH 1 */
     chi2z  #/**< Aligned spin of BH 2 */
     """
@@ -118,7 +117,7 @@ def FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(m1, m2, chi1x, chi1z, chi
 
     m1 = float(m1)
     m2 = float(m2)
-    chi1x = float(chi1x)
+    chip = float(chip)
     chi1z = float(chi1z)
     chi2z = float(chi2z)
 
@@ -132,7 +131,7 @@ def FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(m1, m2, chi1x, chi1z, chi
         q_factor = m2/M
         af_parallel = FinalSpin0815(eta, chi2z, chi1z)
 
-    Sperp = chi1x * q_factor*q_factor
+    Sperp = chip * q_factor*q_factor
 
     af = copysign(1.0, af_parallel) * sqrt(Sperp*Sperp + af_parallel*af_parallel)
     return af

@@ -1182,7 +1182,10 @@ class PhenomD(PhenomDInternals):
         delta_f (sample rate Hz)
         distance (m) : Default 1e6 * Constants.PC_SI = 1 mega parsec
         fRef (reference frequency Hz)
-        phiRef (orbital phase at fRef)"""
+        phiRef (orbital phase at fRef)
+        finspin_func='FinalSpin0815' (used because PhenomP changes what is used to calculate the final spin.)
+        **kwargs ( currently the only extra kwarg that is passed is chip or chi1x. )
+        """
 
         #TODO: Refactor this PhenomD code.
         #so that you can call something like
@@ -1209,8 +1212,8 @@ class PhenomD(PhenomDInternals):
 
         #TODO: This will eventually be chip when I write the
         #'transform to model parameters' function
-        if "chi1x" in kwargs:
-            self.p['chi1x'] = float(kwargs['chi1x'])
+        if "chip" in kwargs:
+            self.p['chip'] = float(kwargs['chip'])
 
         self.p['Mtot'], self.p['eta'] = M_eta_m1_m2(self.p['m1'], self.p['m2'])
         self.p['chipn'] = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
@@ -1251,7 +1254,7 @@ class PhenomD(PhenomDInternals):
         if finspin_func == "FinalSpin0815":
             model_pars['finspin'] = FinalSpin0815(p['eta'], p['chi1z'], p['chi2z'])
         elif finspin_func == "FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH":
-            model_pars['finspin'] = FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(p['m1'], p['m2'], p['chi1x'], p['chi1z'], p['chi2z'])
+            model_pars['finspin'] = FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH(p['m1'], p['m2'], p['chip'], p['chi1z'], p['chi2z'])
             if( absolute(model_pars['finspin']) > 1.0 ):
                 print("Warning: final spin magnitude {0} > 1. Setting final spin magnitude = 1.".format(model_pars['finspin']))
                 model_pars['finspin'] = copysign(1.0, model_pars['finspin'])
