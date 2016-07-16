@@ -91,9 +91,7 @@ class Match(object):
             tol = 6
             np.testing.assert_almost_equal(flist_Hz_1, flist_Hz_2, tol)
         except:
-            print ""
-            print "The frequency lists, flist_Hz_1 and flist_Hz_2 are not the same, at the level of {0} decimal places".format(tol)
-            raise ValueError('frequency arrays not equal at the level of (number of decimal places) tolerance = {0}'.format(tol))
+            raise ValueError('flist_Hz_1 and flist_Hz_2 frequency arrays not equal at the level of (number of decimal places) tolerance = {0}'.format(tol))
 
 
         #now we have constructed a unique frequency list
