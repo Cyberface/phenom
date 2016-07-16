@@ -2,6 +2,11 @@ from phenom.utils.utils import setmask, findindex, pad_to_pow_2
 import numpy as np
 
 
+#TODO: Refactor match code
+#TODO: turn the masking and selection of the frequency
+#series into a method which can be access outside.
+#This is very useful for debugging purposes.
+
 class Match(object):
     """docstring for Match"""
     def __init__(self):
