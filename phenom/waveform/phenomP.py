@@ -1,12 +1,22 @@
 from __future__ import division
 
-from phenom.utils.utils import M_eta_m1_m2, chipn, Constants, chieffPH, WignerdCoefficients
+from phenom.utils.utils import M_eta_m1_m2, chipn, Constants, chieffPH, WignerdCoefficients, MftoHz
 from phenom.utils import swsh
 from phenom.waveform import PhenomD
 from phenom.pn.pn import PhenomPAlpha, PhenomPBeta, PhenomPEpsilon, PhenomPL2PN
 
 from numpy import exp, arange, zeros, array, conj, sin, cos, dot, max, arccos, arctan2
 from numpy.linalg import norm
+
+# import logging
+# logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# logging.debug('This is a log message.')
+
+import logging
+logging.basicConfig(filename='log_filename.txt', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.debug('This is a log message.')
+logger = logging.getLogger()
+logger.setLevel(logging.DEBUG)
 
 class PhenomP():
 
@@ -86,8 +96,9 @@ class PhenomP():
         #This also assumes that m1 + m2 = 1. and hence then /Mtot**2
         self.p['SL'] = (self.p['chi1_l']*self.p['m1']**2. + self.p['chi2_l']*self.p['m2']**2.) / self.p['Mtot']**2.
 
-        print "self.p['SL'] = ", self.p['SL']
-        print "self.p['Sperp'] = ", self.p['Sperp']
+
+        logger.info("self.p['SL'] = {0}".format(self.p['SL']))
+        logger.info("self.p['Sperp'] = {0}".format(self.p['Sperp']))
 
         # import sys
         # sys.exit(1)
@@ -102,9 +113,11 @@ class PhenomP():
         # dimensionless aligned spin of the largest BH
         self.p['chil'] = (self.p['Mtot'] / self.p['m1']) * self.p['chieff']
 
-        print "self.p['chipn'] = ", self.p['chipn']
-        print "self.p['chieff'] = ", self.p['chieff']
-        print "self.p['chil'] = ", self.p['chil']
+        logger.info("self.p['chipn'] = {0}".format(self.p['chipn']))
+        logger.info("self.p['chieff'] = {0}".format(self.p['chieff']))
+        logger.info("self.p['chil'] = {0}".format(self.p['chil']))
+
+
 
         #Compute Ylm's only once and pass them to PhenomPCoreOneFrequency() below.
         Y2m = {}
@@ -116,78 +129,88 @@ class PhenomP():
         Y2m['Y21']  = swsh.SWSH(2,  1, ytheta, yphi).val
         Y2m['Y22']  = swsh.SWSH(2,  2, ytheta, yphi).val
 
+        logger.info("Y2m['Y2m2'] = {0}".format(Y2m['Y2m2']))
+        logger.info("Y2m['Y2m1'] = {0}".format(Y2m['Y2m1']))
+        logger.info("Y2m['Y20'] = {0}".format(Y2m['Y20']))
+        logger.info("Y2m['Y21'] = {0}".format(Y2m['Y21']))
+        logger.info("Y2m['Y22'] = {0}".format(Y2m['Y22']))
+
+        Y2mA = array([Y2m['Y2m2'], Y2m['Y2m1'], Y2m['Y20'], Y2m['Y21'], Y2m['Y22']])
+
         #compute amplitude and phase from aligned spin model
         #the amplitude is unscaled.
-        aligned_amp, aligned_phase = self._generate_aligned_spin_approx(self.p)
+        aligned_amp, aligned_phase, self.MfRD = self._generate_aligned_spin_approx(self.p)
 
-        print "testing"
-        print aligned_amp[0], aligned_phase[0]
+        logger.info("testing")
+        logger.info("aligned_amp[0] = {0}, aligned_phase[0] = {1}".format(aligned_amp[0], aligned_phase[0]))
 
         #'amp_scale = amp0 in LALSimIMRPhenomP.c'
         self.p['amp_scale'] = self.p['Mtot'] * Constants.MRSUN_SI * self.p['Mtot'] * Constants.MTSUN_SI / self.p['distance']
 
         # aligned spin strain
-        self.hP = self.p['amp_scale'] * aligned_amp * exp(-1.j * aligned_phase)
+        #NOTE: convention for h = amp exp(-i phi). where phi increases with time/frequency.
+        #The aligned_phase here comes from np.unwrap(np.angle(h)), where h = a exp(-i phi)
+        #So we don't need the minus sign here.
+        self.hP = self.p['amp_scale'] * aligned_amp * exp(1.j * aligned_phase)
 
-        alpha_at_omega_Ref = self._alpha_precessing_angle(self.p['omega_Ref'], self.p)
-        epsilon_at_omega_Ref = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p)
-        print "testing"
-        print "self.p['omega_Ref'] = ", self.p['omega_Ref']
-        print "alpha_at_omega_Ref = ", alpha_at_omega_Ref
-        print "epsilon_at_omega_Ref = ", epsilon_at_omega_Ref
+        self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p)
+        self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p)
+        logger.info("testing".format())
+        logger.info("self.p['omega_Ref'] = {0}".format(self.p['omega_Ref']))
+        logger.info("self.p['alpha_at_omega_Ref'] = {0}".format(self.p['alpha_at_omega_Ref']))
+        logger.info("self.p['epsilon_at_omega_Ref'] = {0}".format(self.p['epsilon_at_omega_Ref']))
 
         #TODO: Code up the spherical harmonics into a class
 
+        # omega_flist_hz = arange(self.p['f_min'], self.p['f_max'], self.p['delta_f']) * Constants.LAL_PI
+        # self.alpha = zeros(len(omega_flist_hz))
+        # self.epsilon = zeros(len(omega_flist_hz))
+        # for i in range(len(omega_flist_hz)):
+        #     omega = omega_flist_hz[i] * self.p['M_sec']
+        #     self.alpha[i] = self._alpha_precessing_angle(omega, self.p)
+        #     self.epsilon[i] = self._epsilon_precessing_angle(omega, self.p)
+        #
+        # self.alpha -= alpha_at_omega_Ref - self.p['alpha0']
+        # self.epsilon -= epsilon_at_omega_Ref
+
         omega_flist_hz = arange(self.p['f_min'], self.p['f_max'], self.p['delta_f']) * Constants.LAL_PI
+
         self.alpha = zeros(len(omega_flist_hz))
         self.epsilon = zeros(len(omega_flist_hz))
+        self.beta = zeros(len(omega_flist_hz))
+        self.cexp_i_alpha = zeros(len(omega_flist_hz), dtype=complex)
+
+        self.hp = zeros(len(omega_flist_hz), dtype=complex)
+        self.hc = zeros(len(omega_flist_hz), dtype=complex)
+
         for i in range(len(omega_flist_hz)):
-            omega = omega_flist_hz[i] * self.p['M_sec']
-            self.alpha[i] = self._alpha_precessing_angle(omega, self.p)
-            self.epsilon[i] = self._epsilon_precessing_angle(omega, self.p)
+            # omega = omega_flist_hz[i] * self.p['M_sec']
+            self.hp[i], self.hc[i], self.alpha[i], self.epsilon[i], self.beta[i], self.cexp_i_alpha[i] = self.do_the_twist_one_frequency(self.p, i, omega_flist_hz, Y2mA)
 
-        self.alpha -= alpha_at_omega_Ref - self.p['alpha0']
-        self.epsilon -= epsilon_at_omega_Ref
+        self.flist_Hz = omega_flist_hz / Constants.LAL_PI
+        self.t_corr = self.phase_corr(self.p, self.MfRD, self.flist_Hz, aligned_phase)
+        phase_corr = exp(-2.*Constants.LAL_PI * 1.j * self.flist_Hz * self.t_corr)
 
-        cBetah, sBetah = WignerdCoefficients(omega**(1./3.), self.p['SL'], self.p['eta'], self.p['Sperp'])
+        self.hp *= phase_corr
+        self.hc *= phase_corr
 
-        cBetah2 = cBetah*cBetah
-        cBetah3 = cBetah2*cBetah
-        cBetah4 = cBetah3*cBetah
-        sBetah2 = sBetah*sBetah
-        sBetah3 = sBetah2*sBetah
-        sBetah4 = sBetah3*sBetah
 
-        """Compute Wigner d coefficients
-        The expressions below agree with refX [Goldstein?] and Mathematica
-        d2  = Table[WignerD[{2, mp, 2}, 0, -\[Beta], 0], {mp, -2, 2}]
-        dm2 = Table[WignerD[{2, mp, -2}, 0, -\[Beta], 0], {mp, -2, 2}]
-        """
-        sqrt_6 = 2.44948974278317788
-        d2   = array([sBetah4, 2*cBetah*sBetah3, sqrt_6*sBetah2*cBetah2, 2*cBetah3*sBetah, cBetah4])
-        #Exploit symmetry d^2_{-2,-m} = (-1)^m d^2_{2,m}
-        dm2  = array([d2[4], -d2[3], d2[2], -d2[1], d2[0]])
 
-        Y2mA = array([Y2m['Y2m2'], Y2m['Y2m1'], Y2m['Y20'], Y2m['Y21'], Y2m['Y22']])
-        hp_sum = 0.
-        hc_sum = 0.
-        #Sum up contributions to \tilde h+ and \tilde hx
-        #Precompute powers of e^{i m alpha}
-        cexp_i_alpha = exp(+1.j*self.alpha)
-        cexp_2i_alpha = cexp_i_alpha*cexp_i_alpha
-        cexp_mi_alpha = 1.0/cexp_i_alpha
-        cexp_m2i_alpha = cexp_mi_alpha*cexp_mi_alpha
-        cexp_im_alpha = array([cexp_m2i_alpha, cexp_mi_alpha, 1.0, cexp_i_alpha, cexp_2i_alpha])
 
-        for m in [-2, -1, 0, 1, 2]:
-            T2m   = cexp_im_alpha[-m+2] * dm2[m+2] *      Y2mA[m+2]  # = cexp(-I*m*alpha) * dm2[m+2] *      Y2mA[m+2]
-            Tm2m  = cexp_im_alpha[m+2]  * d2[m+2]  * conj(Y2mA[m+2]) # = cexp(+I*m*alpha) * d2[m+2]  * conj(Y2mA[m+2])
-            hp_sum +=     T2m + Tm2m
-            hc_sum += +1.j*(T2m - Tm2m)
 
-        eps_phase_hP = exp(-2*1.j*self.epsilon) * self.hP / 2.0
-        self.hp = eps_phase_hP * hp_sum
-        self.hc = eps_phase_hP * hc_sum
+    def phase_corr(self, p, MfRD, freq, aligned_phase):
+        #NOTE: The sign of the phase used here is opposite of that in lal but they both follow the same convention
+        from scipy.interpolate import UnivariateSpline
+        dphi = UnivariateSpline(freq, aligned_phase, k=3, s=0)
+        self.dphilist = dphi.derivative(1)(freq)
+        f_final = MftoHz(MfRD, p['Mtot'])
+        # Time correction is t(f_final) = 1/(2pi) dphi/df (f_final)
+        t_corr = dphi.derivative(1)(f_final) / (2. * Constants.LAL_PI)
+        print "t_corr = ", t_corr
+        return t_corr
+
+
+
 
     def _generate_aligned_spin_approx(self, p):
         """
@@ -218,7 +241,7 @@ class PhenomP():
         #we don't want that for phenomP
         #so we undo the scaling
         ph.amp /= ph.model_pars['amp0']
-        return ph.amp, ph.phase
+        return ph.amp, ph.phase, ph.model_pars['fRD']
 
     def _alpha_precessing_angle(self, omega, p):
         """This function uses omega (the orbital angular frequency) as its argument!
@@ -257,8 +280,9 @@ class PhenomP():
         s2z,           Initial value of s2z: dimensionless spin of BH 2
         """
 
-        print "p['m1'] = ", p['m1']
-        print "p['m2'] = ", p['m2']
+
+        logger.info("p['m1'] =  {0}".format(p['m1']))
+        logger.info("p['m2'] =  {0}".format(p['m2']))
         if p['m1'] < p['m2']:
             raise ValueError('m1 = {0}, m2 = {1}. Convention error, this function needs m1 > m2'.format(p['m1'], p['m2']))
 
@@ -279,17 +303,17 @@ class PhenomP():
         #in LAL this step is done in XLALSimInspiralInitialConditionsPrecessingApproxs in LALSimInspiralSpinTaylor.c
         #But it's simple so I just do it in this function.
 
-        print("spins before rotation by {0} = ".format(p['inclination']))
-        print("chi1x = {0}, chi1y = {1}, chi1z = {2}".format(p['chi1x'], p['chi1y'], p['chi1z']))
-        print("chi2x = {0}, chi2y = {1}, chi2z = {2}".format(p['chi2x'], p['chi2y'], p['chi2z']))
+        logger.info("spins before rotation by {0} = ".format(p['inclination']))
+        logger.info("chi1x = {0}, chi1y = {1}, chi1z = {2}".format(p['chi1x'], p['chi1y'], p['chi1z']))
+        logger.info("chi2x = {0}, chi2y = {1}, chi2z = {2}".format(p['chi2x'], p['chi2y'], p['chi2z']))
 
 
         p['chi1x'], p['chi1z'] = self.ROTATEY(p['inclination'], p['chi1x'], p['chi1z'])
         p['chi2x'], p['chi2z'] = self.ROTATEY(p['inclination'], p['chi2x'], p['chi2z'])
 
-        print("spins after rotation by {0} = ".format(p['inclination']))
-        print("chi1x = {0}, chi1y = {1}, chi1z = {2}".format(p['chi1x'], p['chi1y'], p['chi1z']))
-        print("chi2x = {0}, chi2y = {1}, chi2z = {2}".format(p['chi2x'], p['chi2y'], p['chi2z']))
+        logger.info("spins after rotation by {0} = ".format(p['inclination']))
+        logger.info("chi1x = {0}, chi1y = {1}, chi1z = {2}".format(p['chi1x'], p['chi1y'], p['chi1z']))
+        logger.info("chi2x = {0}, chi2y = {1}, chi2z = {2}".format(p['chi2x'], p['chi2y'], p['chi2z']))
 
 
 
@@ -299,7 +323,7 @@ class PhenomP():
         lnhaty = 0.
         lnhatz = cos(p['inclination'])
 
-        print("lnhatx = {0}, lnhaty = {1}, lnhatz = {2}".format(lnhatx, lnhaty, lnhatz))
+        logger.info("lnhatx = {0}, lnhaty = {1}, lnhatz = {2}".format(lnhatx, lnhaty, lnhatz))
 
         #compute the aligned spin component. The component of the spins along lnhat
         chi1_l = dot( [p['chi1x'], p['chi1y'], p['chi1z']], [lnhatx, lnhaty, lnhatz] )
@@ -318,32 +342,32 @@ class PhenomP():
         chi1_perp = norm( [chi1_perp_x, chi1_perp_y, chi1_perp_z] )
         chi2_perp = norm( [chi2_perp_x, chi2_perp_y, chi2_perp_z] )
 
-        print("chi1_perp = {0}".format(chi1_perp))
-        print("chi2_perp = {0}".format(chi2_perp))
+        logger.info("chi1_perp = {0}".format(chi1_perp))
+        logger.info("chi2_perp = {0}".format(chi2_perp))
 
-        print("m1_2 = {0}".format(m1_2))
-        print("m2_2 = {0}".format(m2_2))
+        logger.info("m1_2 = {0}".format(m1_2))
+        logger.info("m2_2 = {0}".format(m2_2))
 
         #magnitude of in-plane Dimensionfull spins
         S1_perp = chi1_perp * m1_2
         S2_perp = chi2_perp * m2_2
-        print("S1_perp = ", S1_perp)
-        print("S2_perp = ", S2_perp)
+        logger.info("S1_perp = {0}".format(S1_perp))
+        logger.info("S2_perp = {0}".format(S2_perp))
 
         #Below Eq.3.2  PhysRevD.91.024043
         A1 = 2 + (3*p['m2']) / (2*p['m1'])
         A2 = 2 + (3*p['m1']) / (2*p['m2'])
-        print("A1 = ", A1)
-        print("A2 = ", A2)
+        logger.info("A1 = {0}".format(A1))
+        logger.info("A2 = {0}".format(A2))
         ASp1 = A1*S1_perp
         ASp2 = A2*S2_perp
-        print("ASp1 = ", ASp1)
-        print("ASp2 = ", ASp2)
+        logger.info("ASp1 = {0}".format(ASp1))
+        logger.info("ASp2 = {0}".format(ASp2))
 
         num = max([ASp1, ASp2])
         den = A1*m1_2
-        print("num = ", num)
-        print("den = ", den)
+        logger.info("num ={0} ".format(num))
+        logger.info("den ={0} ".format(den))
         #chip = max(A1 Sp1, A2 Sp2) / (A_i m_i^2) The denomenator references the larger BH
         chip = num / den
 
@@ -364,7 +388,7 @@ class PhenomP():
 
         #Compute thetaJ, the angle between J0 and line of sight (z-direction)
         if (J0 < 1e-10):
-            print("Warning: |J0| < 1e-10. Setting thetaJ = 0.\n")
+            logger.warning("Warning: |J0| < 1e-10. Setting thetaJ = 0.\n")
             thetaJ = 0.
         else:
             thetaJ = arccos(Jz0 / J0)
@@ -398,7 +422,7 @@ class PhenomP():
         else:
             alpha0 = arctan2(rotLy, rotLx)
 
-        print {"chi1_l" : chi1_l, "chi2_l" : chi2_l, "chip": chip, "thetaJ" : thetaJ, "alpha0" : alpha0}
+        logger.info("chi1_l = {0}, chi2_l = {1}, chip = {2}, thetaJ = {3}, alpha0 = {4},".format(chi1_l, chi2_l, chip, thetaJ, alpha0))
 
         return {"chi1_l" : chi1_l, "chi2_l" : chi2_l, "chip": chip, "thetaJ" : thetaJ, "alpha0" : alpha0}
 
@@ -414,7 +438,58 @@ class PhenomP():
         return vx, vz
 
 
+    def do_the_twist_one_frequency(self, p, i, omega_flist_hz, Y2mA):
 
+        #functions take dimensionless as the frequency argument
+        omega = omega_flist_hz[i] * p['M_sec']
+
+        alpha = self._alpha_precessing_angle(omega, p)
+        epsilon = self._epsilon_precessing_angle(omega, p)
+
+        alpha -= (p['alpha_at_omega_Ref'] - p['alpha0'])
+        epsilon -= p['epsilon_at_omega_Ref']
+
+        cBetah, sBetah = WignerdCoefficients(omega**(1./3.), p['SL'], p['eta'], p['Sperp'])
+
+        cBetah2 = cBetah*cBetah
+        cBetah3 = cBetah2*cBetah
+        cBetah4 = cBetah3*cBetah
+        sBetah2 = sBetah*sBetah
+        sBetah3 = sBetah2*sBetah
+        sBetah4 = sBetah3*sBetah
+
+        """Compute Wigner d coefficients
+        The expressions below agree with refX [Goldstein?] and Mathematica
+        d2  = Table[WignerD[{2, mp, 2}, 0, -\[Beta], 0], {mp, -2, 2}]
+        dm2 = Table[WignerD[{2, mp, -2}, 0, -\[Beta], 0], {mp, -2, 2}]
+        """
+        sqrt_6 = 2.44948974278317788
+        d2   = array([sBetah4, 2*cBetah*sBetah3, sqrt_6*sBetah2*cBetah2, 2*cBetah3*sBetah, cBetah4])
+        #Exploit symmetry d^2_{-2,-m} = (-1)^m d^2_{2,m}
+        dm2  = array([d2[4], -d2[3], d2[2], -d2[1], d2[0]])
+
+        # Y2mA = array([Y2m['Y2m2'], Y2m['Y2m1'], Y2m['Y20'], Y2m['Y21'], Y2m['Y22']])
+        hp_sum = 0.
+        hc_sum = 0.
+        #Sum up contributions to \tilde h+ and \tilde hx
+        #Precompute powers of e^{i m alpha}
+        cexp_i_alpha = exp(+1.j*alpha)
+        cexp_2i_alpha = cexp_i_alpha*cexp_i_alpha
+        cexp_mi_alpha = 1.0/cexp_i_alpha
+        cexp_m2i_alpha = cexp_mi_alpha*cexp_mi_alpha
+        cexp_im_alpha = array([cexp_m2i_alpha, cexp_mi_alpha, 1.0, cexp_i_alpha, cexp_2i_alpha])
+
+        for m in [-2, -1, 0, 1, 2]:
+            T2m   = cexp_im_alpha[-m+2] * dm2[m+2] *      Y2mA[m+2]  # = cexp(-I*m*alpha) * dm2[m+2] *      Y2mA[m+2]
+            Tm2m  = cexp_im_alpha[m+2]  * d2[m+2]  * conj(Y2mA[m+2]) # = cexp(+I*m*alpha) * d2[m+2]  * conj(Y2mA[m+2])
+            hp_sum +=     T2m + Tm2m
+            hc_sum += +1.j*(T2m - Tm2m)
+
+        #TODO: hP is the aligned spin strain. currently this is indexed but it would be better if it wasn't.
+        eps_phase_hP = exp(-2*1.j*epsilon) * self.hP[i] / 2.0
+        hp = eps_phase_hP * hp_sum
+        hc = eps_phase_hP * hc_sum
+        return hp, hc, alpha, epsilon, arccos(cBetah) * 2., cexp_i_alpha
 
 
 
