@@ -88,15 +88,12 @@ class Match(object):
             print "flist_Hz_2[0] = ", flist_Hz_2[-1]
             raise ValueError('lengths not equal. Check frequency ranges above, they should be the same')
         try:
-            assert((flist_Hz_1==flist_Hz_2).all())
+            tol = 6
+            np.testing.assert_almost_equal(flist_Hz_1, flist_Hz_2, tol)
         except:
             print ""
-            print "frequency ranges"
-            print "flist_Hz_1[0] = ", flist_Hz_1[0]
-            print "flist_Hz_1[-1] = ", flist_Hz_1[-1]
-            print "flist_Hz_2[0] = ", flist_Hz_2[0]
-            print "flist_Hz_2[0] = ", flist_Hz_2[-1]
-            raise ValueError('frequency arrays not equal. Check frequency ranges above, they should be the same')
+            print "The frequency lists, flist_Hz_1 and flist_Hz_2 are not the same, at the level of {0} decimal places".format(tol)
+            raise ValueError('frequency arrays not equal at the level of (number of decimal places) tolerance = {0}'.format(tol))
 
 
         #now we have constructed a unique frequency list
@@ -105,8 +102,12 @@ class Match(object):
         flist = flist_Hz_1
 
         # get h1 and h2 only over fmin, fmax
-        h1 = ph1.htilde[mask1]
-        h2 = ph2.htilde[mask2]
+        try:
+            h1 = ph1.htilde[mask1]
+            h2 = ph2.htilde[mask2]
+        except:
+            h1 = ph1.hp[mask1]
+            h2 = ph2.hp[mask2]
 
         try:
             assert(len(h1) == len(h2))
