@@ -91,7 +91,7 @@ class Match(object):
             print "flist_Hz_1[-1] = ", flist_Hz_1[-1]
             print "flist_Hz_2[0] = ", flist_Hz_2[0]
             print "flist_Hz_2[0] = ", flist_Hz_2[-1]
-            raise ValueError('lengths not equal. Check frequency ranges above, they should be the same. If they are then check the sample rate for both inputs. They should be the same.)
+            raise ValueError('lengths not equal. Check frequency ranges above, they should be the same. If they are then check the sample rate for both inputs. They should be the same.')
         try:
             tol = 6
             np.testing.assert_almost_equal(flist_Hz_1, flist_Hz_2, tol)
