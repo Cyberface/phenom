@@ -5,7 +5,7 @@ from phenom.utils import swsh
 from phenom.waveform import PhenomD
 from phenom.pn.pn import PhenomPAlpha, PhenomPBeta, PhenomPEpsilon, PhenomPL2PN
 
-from numpy import exp, arange, zeros, array, conj, sin, cos, dot, max, arccos, arctan2
+from numpy import exp, arange, zeros, array, conj, sin, cos, dot, max, arccos, arctan2, unwrap, angle
 from numpy.linalg import norm
 
 # import logging
@@ -14,9 +14,12 @@ from numpy.linalg import norm
 
 import logging
 logging.basicConfig(filename='log_filename.txt', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
-logging.debug('This is a log message.')
 logger = logging.getLogger()
-logger.setLevel(logging.DEBUG)
+# logger.setLevel(logging.DEBUG)
+logger.setLevel(logging.CRITICAL)
+logging.debug('This is a log message.')
+
+
 
 class PhenomP():
 
@@ -189,8 +192,17 @@ class PhenomP():
 
         self.flist_Hz = omega_flist_hz / Constants.LAL_PI
         self.t_corr = self.phase_corr(self.p, self.MfRD, self.flist_Hz, aligned_phase)
-        phase_corr = exp(-2.*Constants.LAL_PI * 1.j * self.flist_Hz * self.t_corr)
+        phase_corr = exp(-2.*Constants.LAL_PI * 1.j * (self.flist_Hz-self.flist_Hz[0]) * self.t_corr)
+        # phase_corr = exp(-2.*Constants.LAL_PI * 1.j * (self.flist_Hz-self.p['fRef']) * self.t_corr)
+        # phase_corr -=
 
+        #TODO: Implement the reference phase and reference frequency properly!
+        #At the moment it only works for fRef = fmin and phiRef = 0.
+
+        #align so the phase is initially = to phiRef
+        # phase = np.unwrap(np.angle(hp))
+
+        print unwrap(angle(phase_corr))[0]
         self.hp *= phase_corr
         self.hc *= phase_corr
 
@@ -206,7 +218,7 @@ class PhenomP():
         f_final = MftoHz(MfRD, p['Mtot'])
         # Time correction is t(f_final) = 1/(2pi) dphi/df (f_final)
         t_corr = dphi.derivative(1)(f_final) / (2. * Constants.LAL_PI)
-        print "t_corr = ", t_corr
+        logger.info("t_corr = {0}".format(t_corr))
         return t_corr
 
 
@@ -232,7 +244,7 @@ class PhenomP():
                     fRef=p['fRef'], phiRef=p['phiRef'],
                     finspin_func="FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH",
                     chip=p['chip'])
-        print "finspin = {0}".format(ph.model_pars['finspin'])
+        logger.info("finspin = {0}".format(ph.model_pars['finspin']))
         #could change this to generate at a single frequency point.
         ph.IMRPhenomDGenerateFD()
         ph.getampandphase(ph.htilde)
