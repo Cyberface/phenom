@@ -1,4 +1,5 @@
-from numpy import sqrt, pi, absolute, ndarray, asarray, concatenate, zeros
+from numpy import sqrt, pi, absolute, ndarray, asarray, concatenate, zeros, max, dot
+from numpy.linalg import norm
 
 class Constants:
     # >>> import lal
@@ -215,6 +216,64 @@ def chipn(eta, chi1z, chi2z):
     chi_s = (chi1z + chi2z) / 2.0;
     chi_a = (chi1z - chi2z) / 2.0;
     return chi_s * (1.0 - eta * 76.0/113.0) + delta * chi_a;
+
+def chip_fun(m1, m2, chi1x, chi1y, chi1z, chi2x, chi2y, chi2z, lnhatx=0., lnhaty=0., lnhatz=1.):
+    """
+    Computes the chip effective precession parameter defined
+    in PhysRevD.91.024043 (Below Eq.3.2).
+    This function assumes that the spins are defined in a
+    frame where the zhat unit vector corresponds to the
+    Lnhat unit vector. As such the default values for lnhat(x,y,z)=(0.,0.,1.)
+
+    We also assume that m1>=m2 and q>1.
+    Input spins are dimensionless
+    """
+    # enforce m1 >= m2 and chi1 is on m1
+    if m1<m2: # swap spins and masses
+        # chi1z, chi2z = chi2z, chi1z
+        chi1x, chi1y, chi1z, chi2x, chi2y, chi2z = float(chi2x), float(chi2y), float(chi2z), float(chi1x), float(chi1y), float(chi1z)
+        m1, m2 = float(m2), float(m1)
+
+    m1_2 = m1**2.
+    m2_2 = m2**2.
+
+    lnnorm = norm([lnhatx, lnhaty, lnhatz])
+    tol = 1e-6
+    if absolute(1. - lnnorm) > tol:
+        raise ValueError("lnnorm = {0}. lnnorm should be unit at tol = {1}: lnhatx = {2}, lnhaty = {3}, lnhatz = {4}".format(lnnorm, tol, lnhatx, lnhaty, lnhatz))
+    else:
+        pass
+    #compute the aligned spin component. The component of the spins along lnhat
+    chi1_l = dot( [chi1x, chi1y, chi1z], [lnhatx, lnhaty, lnhatz] )
+    chi2_l = dot( [chi2x, chi2y, chi2z], [lnhatx, lnhaty, lnhatz] )
+
+    #compute component of spins perpendicular to lnhat
+    chi1_perp_x = chi1x - chi1_l * lnhatx
+    chi1_perp_y = chi1y - chi1_l * lnhaty
+    chi1_perp_z = chi1z - chi1_l * lnhatz
+
+    chi2_perp_x = chi2x - chi2_l * lnhatx
+    chi2_perp_y = chi2y - chi2_l * lnhaty
+    chi2_perp_z = chi2z - chi2_l * lnhatz
+
+    #magnitude of in-plane dimensionless spins
+    chi1_perp = norm( [chi1_perp_x, chi1_perp_y, chi1_perp_z] )
+    chi2_perp = norm( [chi2_perp_x, chi2_perp_y, chi2_perp_z] )
+
+    A1 = 2 + (3*m2) / (2*m1)
+    A2 = 2 + (3*m1) / (2*m2)
+
+    #magnitude of in-plane Dimensionfull spins
+    S1_perp = chi1_perp * m1_2
+    S2_perp = chi2_perp * m2_2
+
+    ASp1 = A1 * S1_perp
+    ASp2 = A2 * S2_perp
+
+    num = max([ASp1, ASp2])
+    den = A1*m1_2
+    return num / den
+
 
 def amp0Func(eta):
     """
