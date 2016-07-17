@@ -2,6 +2,11 @@ from phenom.utils.utils import setmask, findindex, pad_to_pow_2
 import numpy as np
 
 
+#TODO: Refactor match code
+#TODO: turn the masking and selection of the frequency
+#series into a method which can be access outside.
+#This is very useful for debugging purposes.
+
 class Match(object):
     """docstring for Match"""
     def __init__(self):
@@ -86,17 +91,12 @@ class Match(object):
             print "flist_Hz_1[-1] = ", flist_Hz_1[-1]
             print "flist_Hz_2[0] = ", flist_Hz_2[0]
             print "flist_Hz_2[0] = ", flist_Hz_2[-1]
-            raise ValueError('lengths not equal. Check frequency ranges above, they should be the same')
+            raise ValueError('lengths not equal. Check frequency ranges above, they should be the same. If they are then check the sample rate for both inputs. They should be the same.')
         try:
-            assert((flist_Hz_1==flist_Hz_2).all())
+            tol = 6
+            np.testing.assert_almost_equal(flist_Hz_1, flist_Hz_2, tol)
         except:
-            print ""
-            print "frequency ranges"
-            print "flist_Hz_1[0] = ", flist_Hz_1[0]
-            print "flist_Hz_1[-1] = ", flist_Hz_1[-1]
-            print "flist_Hz_2[0] = ", flist_Hz_2[0]
-            print "flist_Hz_2[0] = ", flist_Hz_2[-1]
-            raise ValueError('frequency arrays not equal. Check frequency ranges above, they should be the same')
+            raise ValueError('flist_Hz_1 and flist_Hz_2 frequency arrays not equal at the level of (number of decimal places) tolerance = {0}'.format(tol))
 
 
         #now we have constructed a unique frequency list
@@ -105,8 +105,12 @@ class Match(object):
         flist = flist_Hz_1
 
         # get h1 and h2 only over fmin, fmax
-        h1 = ph1.htilde[mask1]
-        h2 = ph2.htilde[mask2]
+        try:
+            h1 = ph1.htilde[mask1]
+            h2 = ph2.htilde[mask2]
+        except:
+            h1 = ph1.hp[mask1]
+            h2 = ph2.hp[mask2]
 
         try:
             assert(len(h1) == len(h2))

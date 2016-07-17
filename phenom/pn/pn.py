@@ -113,11 +113,17 @@ def PhenomPAlpha(omega, q, chi1x, chi1z, order=-1):
 
     return RET
 
-
 def PhenomPL2PN(v, eta):
     """PhenomPL2PN(v, eta)
-    v = orbital velocity
+    v = orbital velocity : Cubic root of (Pi * Frequency (geometric))
     eta = symmetric mass-ratio
+
+    Simple 2PN version of the orbital angular momentum L,
+    without any spin terms expressed as a function of v.
+    For IMRPhenomP(v2).
+
+    Reference:
+    - Boh&eacute; et al, 1212.5520v2 Eq 4.7 first line
     """
     return (eta/v) * (1. +  (3./2. + eta/6. )*v**2. + (3.373 - 19.*eta/8. - eta**2./24.)*v**4.)
 
