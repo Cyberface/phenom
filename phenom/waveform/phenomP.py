@@ -21,7 +21,7 @@ logging.debug('This is a log message.')
 
 
 
-class PhenomP():
+class PhenomP(object):
 
 
     #TODO:
