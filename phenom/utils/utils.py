@@ -227,6 +227,12 @@ def chip_fun(m1, m2, chi1x, chi1y, chi1z, chi2x, chi2y, chi2z, lnhatx=0., lnhaty
 
     We also assume that m1>=m2 and q>1.
     Input spins are dimensionless
+
+    Returns:
+        chip (dimensionless precession parameter)
+            dimensionless spin components along the lnhat vector
+        chi1_l
+        chi2_l
     """
     # enforce m1 >= m2 and chi1 is on m1
     if m1<m2: # swap spins and masses
@@ -272,7 +278,10 @@ def chip_fun(m1, m2, chi1x, chi1y, chi1z, chi2x, chi2y, chi2z, lnhatx=0., lnhaty
 
     num = max([ASp1, ASp2])
     den = A1*m1_2
-    return num / den
+
+    chip = num / den
+
+    return chip, chi1_l, chi2_l
 
 
 def amp0Func(eta):

@@ -331,7 +331,7 @@ class PhenomP(object):
         lnhaty = 0.
         lnhatz = cos(p['inclination'])
 
-        chip = chip_fun(p['m1'], p['m2'], p['chi1x'], p['chi1y'], p['chi1z'], p['chi2x'], p['chi2y'], p['chi2z'], lnhatx, lnhaty, lnhatz)
+        chip, chi1_l, chi2_l = chip_fun(p['m1'], p['m2'], p['chi1x'], p['chi1y'], p['chi1z'], p['chi2x'], p['chi2y'], p['chi2z'], lnhatx, lnhaty, lnhatz)
 
         #compute L, J0 and orientation angles
         piM = Constants.LAL_PI * p['M_sec']
