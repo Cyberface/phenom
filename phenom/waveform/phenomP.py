@@ -1,6 +1,6 @@
 from __future__ import division
 
-from phenom.utils.utils import M_eta_m1_m2, chipn, Constants, chieffPH, WignerdCoefficients, MftoHz
+from phenom.utils.utils import M_eta_m1_m2, chipn, Constants, chieffPH, WignerdCoefficients, MftoHz, chip_fun
 from phenom.utils import swsh
 from phenom.waveform import PhenomD
 from phenom.pn.pn import PhenomPAlpha, PhenomPBeta, PhenomPEpsilon, PhenomPL2PN
@@ -206,10 +206,6 @@ class PhenomP(object):
         self.hp *= phase_corr
         self.hc *= phase_corr
 
-
-
-
-
     def phase_corr(self, p, MfRD, freq, aligned_phase):
         #NOTE: The sign of the phase used here is opposite of that in lal but they both follow the same convention
         from scipy.interpolate import UnivariateSpline
@@ -335,53 +331,7 @@ class PhenomP(object):
         lnhaty = 0.
         lnhatz = cos(p['inclination'])
 
-        logger.info("lnhatx = {0}, lnhaty = {1}, lnhatz = {2}".format(lnhatx, lnhaty, lnhatz))
-
-        #compute the aligned spin component. The component of the spins along lnhat
-        chi1_l = dot( [p['chi1x'], p['chi1y'], p['chi1z']], [lnhatx, lnhaty, lnhatz] )
-        chi2_l = dot( [p['chi2x'], p['chi2y'], p['chi2z']], [lnhatx, lnhaty, lnhatz] )
-
-        #compute component of spins perpendicular to lnhat
-        chi1_perp_x = p['chi1x'] - chi1_l * lnhatx
-        chi1_perp_y = p['chi1y'] - chi1_l * lnhaty
-        chi1_perp_z = p['chi1z'] - chi1_l * lnhatz
-
-        chi2_perp_x = p['chi2x'] - chi2_l * lnhatx
-        chi2_perp_y = p['chi2y'] - chi2_l * lnhaty
-        chi2_perp_z = p['chi2z'] - chi2_l * lnhatz
-
-        #magnitude of in-plane dimensionless spins
-        chi1_perp = norm( [chi1_perp_x, chi1_perp_y, chi1_perp_z] )
-        chi2_perp = norm( [chi2_perp_x, chi2_perp_y, chi2_perp_z] )
-
-        logger.info("chi1_perp = {0}".format(chi1_perp))
-        logger.info("chi2_perp = {0}".format(chi2_perp))
-
-        logger.info("m1_2 = {0}".format(m1_2))
-        logger.info("m2_2 = {0}".format(m2_2))
-
-        #magnitude of in-plane Dimensionfull spins
-        S1_perp = chi1_perp * m1_2
-        S2_perp = chi2_perp * m2_2
-        logger.info("S1_perp = {0}".format(S1_perp))
-        logger.info("S2_perp = {0}".format(S2_perp))
-
-        #Below Eq.3.2  PhysRevD.91.024043
-        A1 = 2 + (3*p['m2']) / (2*p['m1'])
-        A2 = 2 + (3*p['m1']) / (2*p['m2'])
-        logger.info("A1 = {0}".format(A1))
-        logger.info("A2 = {0}".format(A2))
-        ASp1 = A1*S1_perp
-        ASp2 = A2*S2_perp
-        logger.info("ASp1 = {0}".format(ASp1))
-        logger.info("ASp2 = {0}".format(ASp2))
-
-        num = max([ASp1, ASp2])
-        den = A1*m1_2
-        logger.info("num ={0} ".format(num))
-        logger.info("den ={0} ".format(den))
-        #chip = max(A1 Sp1, A2 Sp2) / (A_i m_i^2) The denomenator references the larger BH
-        chip = num / den
+        chip, chi1_l, chi2_l = chip_fun(p['m1'], p['m2'], p['chi1x'], p['chi1y'], p['chi1z'], p['chi2x'], p['chi2y'], p['chi2z'], lnhatx, lnhaty, lnhatz)
 
         #compute L, J0 and orientation angles
         piM = Constants.LAL_PI * p['M_sec']
