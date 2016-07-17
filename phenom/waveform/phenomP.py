@@ -202,7 +202,7 @@ class PhenomP():
         #align so the phase is initially = to phiRef
         # phase = np.unwrap(np.angle(hp))
 
-        print unwrap(angle(phase_corr))[0]
+        # print unwrap(angle(phase_corr))[0]
         self.hp *= phase_corr
         self.hc *= phase_corr
 
