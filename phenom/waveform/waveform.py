@@ -33,7 +33,7 @@ class Waveform(object):
                     'delta_f':1./2.,
                     'delta_t':1./2.}
 
-    available_approximants = ['IMRPhenomD']
+    available_approximants = ['IMRPhenomD', 'IMRPhenomPv2_LAL']
 
     def __init__(self,
         approximant=default_args['approximant'],
