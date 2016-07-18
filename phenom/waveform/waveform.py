@@ -96,7 +96,7 @@ class Waveform(object):
         #are defined. For examples only time domain approximants need
         #a 'delta_t'. It doesn't really mean anything for frequency domain.
 
-        print "calling _generate_fd_waveform"
+        # print "calling _generate_fd_waveform"
         self._generate_fd_waveform(self.input_params)
 
     def _generate_fd_waveform(self, input_params):
@@ -146,10 +146,22 @@ class Waveform(object):
             self.hctilde = -1.j * cfac * hptilde
             self.hptilde = pfac * hptilde
 
-        elif input_params['approximant'] == 'IMRPhenomP':
-            raise NotImplementedError('PhenomP not implemented')
+        elif input_params['approximant'] == 'IMRPhenomPv2_LAL':
+            from phenom.waveform import PhenomP
+            ph = PhenomP(m1=input_params['m1'], m2=input_params['m2'],
+                        chi1x=input_params['chi1x'], chi1y=input_params['chi1y'], chi1z=input_params['chi1z'],
+                        chi2x=input_params['chi2x'], chi2y=input_params['chi2y'], chi2z=input_params['chi2z'],
+                        f_min=input_params['f_min'], f_max=input_params['f_max'],
+                        delta_f=input_params['delta_f'],
+                        distance=input_params['distance'],
+                        fRef=input_params['fRef'], phiRef=input_params['phiRef'],
+                        inclination=input_params['inclination'])
+            self.flist_Hz = ph.flist_Hz
+            self.hptilde = ph.hp
+            self.hctilde = ph.hc
 
         else:
             raise NotImplementedError("approximant = {0} is not implemented. Available approximants = {1}".format(input_params['approximant'], self.available_approximants))
+
         # TODO: Need to add a master function to return hp and hx with appropriate
         # inclination angle and sin, cosine etc.
