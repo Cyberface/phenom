@@ -39,7 +39,7 @@ class Match(object):
         if isinstance(ph1, MakeWaveformSeries) and isinstance(ph2, MakeWaveformSeries):
             pass
         else:
-            raise('ph1 and ph2 need to be instances of phenom.MakeWaveformSeries')
+            raise TypeError('ph1 and ph2 need to be instances of phenom.MakeWaveformSeries')
 
 
         #first thing to do is to find the
