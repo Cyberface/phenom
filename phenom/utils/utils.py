@@ -243,12 +243,26 @@ def chip_fun(m1, m2, chi1x, chi1y, chi1z, chi2x, chi2y, chi2z, lnhatx=0., lnhaty
     m1_2 = m1**2.
     m2_2 = m2**2.
 
+    chi1norm = norm([chi1x, chi1y, chi1z])
+    chi2norm = norm([chi2x, chi2y, chi2z])
+    try:
+        assert(chi1norm<=1.)
+    except:
+        raise AssertionError("chi1norm = {0}. chi1norm should be less than 1.: chi1x = {1}, chi1y = {2}, chi1z = {3}".format(chi1norm, chi1x, chi1y, chi1z))
+    try:
+        assert(chi2norm<=1.)
+    except:
+        raise AssertionError("chi2norm = {0}. chi2norm should be less than 1.: chi2x = {1}, chi2y = {2}, chi2z = {3}".format(chi2norm, chi2x, chi2y, chi2z))
+
+
     lnnorm = norm([lnhatx, lnhaty, lnhatz])
+
     tol = 1e-6
-    if absolute(1. - lnnorm) > tol:
-        raise ValueError("lnnorm = {0}. lnnorm should be unit at tol = {1}: lnhatx = {2}, lnhaty = {3}, lnhatz = {4}".format(lnnorm, tol, lnhatx, lnhaty, lnhatz))
-    else:
-        pass
+    try:
+        assert(absolute(1.-lnnorm)<1e-6)
+    except:
+        raise AssertionError("lnnorm = {0}. lnnorm should be unit at tol = {1}: lnhatx = {2}, lnhaty = {3}, lnhatz = {4}".format(1.-lnnorm, tol, lnhatx, lnhaty, lnhatz))
+
     #compute the aligned spin component. The component of the spins along lnhat
     chi1_l = dot( [chi1x, chi1y, chi1z], [lnhatx, lnhaty, lnhatz] )
     chi2_l = dot( [chi2x, chi2y, chi2z], [lnhatx, lnhaty, lnhatz] )

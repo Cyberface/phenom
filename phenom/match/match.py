@@ -1,5 +1,7 @@
 from phenom.utils.utils import setmask, findindex, pad_to_pow_2
+from phenom import MakeWaveformSeries
 import numpy as np
+
 
 
 #TODO: Refactor match code
@@ -10,7 +12,7 @@ import numpy as np
 class Match(object):
     """docstring for Match"""
     def __init__(self):
-        print "init Match class"
+        # print "init Match class"
         pass
 
     ################################################
@@ -18,8 +20,14 @@ class Match(object):
     # should be members of a `FrequencySeries` class
     # with attributes flist, deltaF etc.
     def match(self, ph1, ph2, fmin=0, fmax=0, psd_fun=None, zpf=5):
-        """computes the overlap between normalised
-        templates, optimised over time and phase.
+        """
+        input:
+            ph1 : instance of phenom.MakeWaveformSeries
+            ph2 : instance of phenom.MakeWaveformSeries
+
+        computes the overlap between normalised
+        templates (h_plus only!),
+        optimised over time and phase.
         Templates must be in frequency domain.
         ph1, ph2 = instances of PhenomD class.
         Input data must be in Hz
@@ -27,10 +35,12 @@ class Match(object):
         zpf : default 5 : zero pad factor
             automatically pads to power of 2
         """
-        #generate strains
-        #TODO: ONLY WORKS FOR PHENOMD RIGHT NOW. MAKE MORE GENERAL
-        # ph1.IMRPhenomDGenerateFD()
-        # ph2.IMRPhenomDGenerateFD()
+
+        if isinstance(ph1, MakeWaveformSeries) and isinstance(ph2, MakeWaveformSeries):
+            pass
+        else:
+            raise TypeError('ph1 and ph2 need to be instances of phenom.MakeWaveformSeries')
+
 
         #first thing to do is to find the
         #common frequency range.
@@ -106,11 +116,13 @@ class Match(object):
 
         # get h1 and h2 only over fmin, fmax
         try:
-            h1 = ph1.htilde[mask1]
-            h2 = ph2.htilde[mask2]
+            h1 = ph1.hptilde[mask1]
         except:
-            h1 = ph1.hp[mask1]
-            h2 = ph2.hp[mask2]
+            raise AttributeError('h1 does not have attribute hptilde')
+        try:
+            h2 = ph2.hptilde[mask2]
+        except:
+            raise AttributeError('h2 does not have attribute hptilde')
 
         try:
             assert(len(h1) == len(h2))

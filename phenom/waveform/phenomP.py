@@ -453,6 +453,7 @@ class PhenomP(object):
         hc = eps_phase_hP * hc_sum
         return hp, hc, alpha, epsilon, arccos(cBetah) * 2., cexp_i_alpha
 
+#TODO: Need a function to return the precession angles if requested
 
 
 #
