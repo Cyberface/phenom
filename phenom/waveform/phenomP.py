@@ -181,14 +181,13 @@ class PhenomP(object):
         self.alpha = zeros(len(omega_flist_hz))
         self.epsilon = zeros(len(omega_flist_hz))
         self.beta = zeros(len(omega_flist_hz))
-        self.cexp_i_alpha = zeros(len(omega_flist_hz), dtype=complex)
 
         self.hp = zeros(len(omega_flist_hz), dtype=complex)
         self.hc = zeros(len(omega_flist_hz), dtype=complex)
 
         for i in range(len(omega_flist_hz)):
             # omega = omega_flist_hz[i] * self.p['M_sec']
-            self.hp[i], self.hc[i], self.alpha[i], self.epsilon[i], self.beta[i], self.cexp_i_alpha[i] = self.do_the_twist_one_frequency(self.p, i, omega_flist_hz, Y2mA)
+            self.hp[i], self.hc[i], self.alpha[i], self.epsilon[i], self.beta[i] = self.do_the_twist_one_frequency(self.p, i, omega_flist_hz, Y2mA)
 
         self.flist_Hz = omega_flist_hz / Constants.LAL_PI
         self.t_corr = self.phase_corr(self.p, self.MfRD, self.flist_Hz, aligned_phase)
@@ -451,7 +450,7 @@ class PhenomP(object):
         eps_phase_hP = exp(-2*1.j*epsilon) * self.hP[i] / 2.0
         hp = eps_phase_hP * hp_sum
         hc = eps_phase_hP * hc_sum
-        return hp, hc, alpha, epsilon, arccos(cBetah) * 2., cexp_i_alpha
+        return hp, hc, alpha, epsilon, arccos(cBetah) * 2.
 
 #TODO: Need a function to return the precession angles if requested
 
