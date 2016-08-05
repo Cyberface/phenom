@@ -106,6 +106,16 @@ def HztoMf(Hz, M):
     """
     return Hz * (Constants.MTSUN_SI*M)
 
+def StoM(S, Mtot):
+    """StoM(S, Mtot)
+    """
+    return S / (Constants.MTSUN_SI*Mtot)
+
+def MtoS(M, Mtot):
+    """MtoS(Hz, Mtot)
+    """
+    return M * (Constants.MTSUN_SI*Mtot)
+
 def Mc_m1_m2(m1, m2):
     """
     Computes the chirp mass (Mc) from the component masses
