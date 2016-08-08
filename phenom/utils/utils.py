@@ -368,3 +368,18 @@ def WignerdCoefficients(v, SL, eta, Sp):
     sin_beta_half = + sqrt( (1.0 - cos_beta) / 2.0 )  #sin(beta/2)
 
     return cos_beta_half, sin_beta_half
+
+def planck_taper(tlist, t1, t2):
+    """tlist: array of times
+    t1. for t<=t1 then return 0
+    t2. for t>=t2 then return 1
+    else return 1./(np.exp((t2-t1)/(t-t1)+(t2-t1)/(t-t2))+1)"""
+    tout = []
+    for t in tlist:
+        if t<=t1:
+            tout.append(0.)
+        elif t>=t2:
+            tout.append(1.)
+        else:
+            tout.append(1./(np.exp((t2-t1)/(t-t1)+(t2-t1)/(t-t2))+1))
+    return np.asarray(tout)
