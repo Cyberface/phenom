@@ -1,3 +1,6 @@
+from numpy import arange
+from scipy.interpolate import interp1d
+
 class MakeWaveformSeries(object):
     """docstring for MakeWaveformSeries"""
     def __init__(self, freqs, hptilde, hctilde, df=None):
@@ -18,7 +21,7 @@ class MakeWaveformSeries(object):
             self.df = df
             interp_hptilde = interp1d(freqs, hptilde)
             interp_hctilde = interp1d(freqs, hctilde)
-            self.flist_Hz = np.arange(self.f_min, self.f_max, self.df)
+            self.flist_Hz = arange(self.f_min, self.f_max, self.df)
             self.hptilde = interp_hptilde(self.flist_Hz)
             self.hctilde = interp_hctilde(self.flist_Hz)
             self.npts = len(self.flist_Hz)
