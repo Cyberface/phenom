@@ -1,4 +1,4 @@
-from numpy import sqrt, pi, absolute, ndarray, asarray, concatenate, zeros, max, dot
+from numpy import sqrt, pi, absolute, ndarray, asarray, concatenate, zeros, max, dot, exp
 from numpy.linalg import norm
 
 class Constants:
@@ -381,5 +381,5 @@ def planck_taper(tlist, t1, t2):
         elif t>=t2:
             tout.append(1.)
         else:
-            tout.append(1./(np.exp((t2-t1)/(t-t1)+(t2-t1)/(t-t2))+1))
-    return np.asarray(tout)
+            tout.append(1./(exp((t2-t1)/(t-t1)+(t2-t1)/(t-t2))+1))
+    return asarray(tout)
