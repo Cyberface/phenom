@@ -1,27 +1,26 @@
-
 class MakeWaveformSeries(object):
     """docstring for MakeWaveformSeries"""
-    def __init__(self, freqs, hptilde, hctilde):
+    def __init__(self, freqs, hptilde, hctilde, df=None):
         """
         assuming uniformly spaced!
         """
-        #TODO: Add option to interpolate to unitformly spaced?
-        self.flist_Hz = freqs
-        self.hptilde = hptilde
-        self.hctilde = hctilde
-        self.f_min = self.flist_Hz[0]
-        self.f_max = self.flist_Hz[-1]
-        self.df = self.flist_Hz[1] - self.f_min
-        self.npts = len(self.flist_Hz)
+        self.f_min = freqs[0]
+        self.f_max = freqs[-1]
 
+        if df is None:
+            #TODO: Add option to interpolate to unitformly spaced?
+            self.flist_Hz = freqs
+            self.hptilde = hptilde
+            self.hctilde = hctilde
+            self.df = self.flist_Hz[1] - self.f_min
+            self.npts = len(self.flist_Hz)
+        else:
+            self.df = df
+            interp_hptilde = interp1d(freqs, hptilde)
+            interp_hctilde = interp1d(freqs, hctilde)
+            self.flist_Hz = np.arange(self.f_min, self.f_max, self.df)
+            self.hptilde = interp_hptilde(self.flist_Hz)
+            self.hctilde = interp_hctilde(self.flist_Hz)
+            self.npts = len(self.flist_Hz)
 
-#example
-#php = phenom.PhenomP()
-#php_ws = MakeWaveformSeries(php.flist_Hz, php.hptilde, php.hctilde)
-
-#external data example
-
-# nr_wf = MakeWaveformSeries(nr_frequs, nr_amp, nr_phase)
-# nr_wf = MakeWaveformSeries(nr_frequs, nr_hptilde, nr_hctilde)
-
-# nr_wf.hptilde
+            
