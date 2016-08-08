@@ -96,11 +96,19 @@ class Match(object):
             assert(len(flist_Hz_1) == len(flist_Hz_2))
         except:
             print ""
+            print "frequency spacing 1 = {0}".format(ph1.df)
+            print "frequency spacing 2 = {0}".format(ph2.df)
+            print "frequency spacing should be the same"
+            print ""
+            print "number of points 1 = {0}".format(len(ph1.flist_Hz))
+            print "number of points 2 = {0}".format(len(ph2.flist_Hz))
+            print "number of points should be the same"
+            print ""
             print "frequency ranges"
             print "flist_Hz_1[0] = ", flist_Hz_1[0]
             print "flist_Hz_1[-1] = ", flist_Hz_1[-1]
             print "flist_Hz_2[0] = ", flist_Hz_2[0]
-            print "flist_Hz_2[0] = ", flist_Hz_2[-1]
+            print "flist_Hz_2[-1] = ", flist_Hz_2[-1]
             raise ValueError('lengths not equal. Check frequency ranges above, they should be the same. If they are then check the sample rate for both inputs. They should be the same.')
         try:
             tol = 6
