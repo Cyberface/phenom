@@ -69,7 +69,8 @@ class Waveform(object):
 
         # enforce m1 >= m2 and chi1 is on m1
         if m1<m2: # swap spins and masses
-            chi1z, chi2z = chi2z, chi1z
+            # chi1z, chi2z = chi2z, chi1z
+            chi1x, chi1y, chi1z, chi2x, chi2y, chi2z = chi2x, chi2y, chi2z, chi1x, chi1y, chi1z
             m1, m2 = m2, m1
 
         # put inputs into a dictionary
