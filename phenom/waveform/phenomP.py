@@ -33,7 +33,7 @@ class PhenomP(object):
 
 
     """docstring for PhenomP"""
-    def __init__(self,  m1=10., m2=10., chi1x=0.,  chi1y=0., chi1z=0., chi2x=0., chi2y=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0., inclination=0.):
+    def __init__(self,  m1=10., m2=10., chi1x=0.,  chi1y=0., chi1z=0., chi2x=0., chi2y=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0., inclination=0., VERSION='v2'):
         """
         input:
         m1 (Msun)
@@ -46,7 +46,12 @@ class PhenomP(object):
         distance (m) : Default 1e6 * Constants.PC_SI = 1 mega parsec
         fRef (reference frequency Hz)
         phiRef (orbital phase at fRef)
-        inclination (rad) angle between orbital anglar momentm and z-axis ?"""
+        inclination (rad) angle between orbital anglar momentm and z-axis ?
+        VERSION (string) : default 'v2' which is the LAL v2 version. Use this to select newer versions."""
+
+        #set version number to be used.
+        #this changes how alpha and epilon angles are computed
+        self.VERSION = VERSION
 
         # NOTE PhenomP in LAL assumes that m2>m1. We use the opposite convention here!
 
@@ -156,8 +161,17 @@ class PhenomP(object):
         #So we don't need the minus sign here.
         self.hP = self.p['amp_scale'] * aligned_amp * exp(1.j * aligned_phase)
 
-        self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p)
-        self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p)
+
+        if VERSION == "v2":
+            self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, self.VERSION)
+            self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, self.VERSION)
+        else:
+            print "Only version implemented is 'v2'"
+            print "Have to update this to new model for alpha and hence epsilon"
+            print "exiting sys.exit(0)"
+            import sys
+            sys.exit(0)
+
         logger.info("testing".format())
         logger.info("self.p['omega_Ref'] = {0}".format(self.p['omega_Ref']))
         logger.info("self.p['alpha_at_omega_Ref'] = {0}".format(self.p['alpha_at_omega_Ref']))
@@ -187,7 +201,7 @@ class PhenomP(object):
 
         for i in range(len(omega_flist_hz)):
             # omega = omega_flist_hz[i] * self.p['M_sec']
-            self.hp[i], self.hc[i], self.alpha[i], self.epsilon[i], self.beta[i] = self.do_the_twist_one_frequency(self.p, i, omega_flist_hz, Y2mA)
+            self.hp[i], self.hc[i], self.alpha[i], self.epsilon[i], self.beta[i] = self.do_the_twist_one_frequency(self.p, i, omega_flist_hz, Y2mA, self.VERSION)
 
         self.flist_Hz = omega_flist_hz / Constants.LAL_PI
         self.t_corr = self.phase_corr(self.p, self.MfRD, self.flist_Hz, aligned_phase)
@@ -250,16 +264,25 @@ class PhenomP(object):
         ph.amp /= ph.model_pars['amp0']
         return ph.amp, ph.phase, ph.model_pars['fRD']
 
-    def _alpha_precessing_angle(self, omega, p):
+    def _alpha_precessing_angle(self, omega, p, VERSION):
         """This function uses omega (the orbital angular frequency) as its argument!
         orbital angular frequency = pi * f_GW = omega_GW / 2
         """
         q = p['q']
         chi1x = p['chip'] #TODO This needs to be chip
         chi1z = p['chil'] #TODO dimensionless aligned spin of the largest BH
-        return PhenomPAlpha(omega, q, chi1x, chi1z, order=-1)
 
-    def _epsilon_precessing_angle(self, omega, p):
+
+        if VERSION == "v2":
+            return PhenomPAlpha(omega, q, chi1x, chi1z, order=-1)
+        else:
+            print "Only version implemented is 'v2'"
+            print "Have to update this to new model for alpha and hence epsilon"
+            print "exiting sys.exit(0)"
+            import sys
+            sys.exit(0)
+
+    def _epsilon_precessing_angle(self, omega, p, VERSION):
         """This function uses omega (the orbital angular frequency) as its argument!
         orbital angular frequency = pi * f_GW = omega_GW / 2
         """
@@ -268,7 +291,15 @@ class PhenomP(object):
         q = p['q']
         chi1x = p['chip'] #TODO This needs to be chip
         chi1z = p['chil'] #TODO dimensionless aligned spin of the largest BH
-        return PhenomPEpsilon(omega, q, chi1x, chi1z, order=-1)
+
+        if VERSION == "v2":
+            return PhenomPEpsilon(omega, q, chi1x, chi1z, order=-1)
+        else:
+            print "Only version implemented is 'v2'"
+            print "Have to update this to new model for alpha and hence epsilon"
+            print "exiting sys.exit(0)"
+            import sys
+            sys.exit(0)
 
 
     def _PhenomPCalculateModelParameters(self, p):
@@ -399,13 +430,21 @@ class PhenomP(object):
         return vx, vz
 
 
-    def do_the_twist_one_frequency(self, p, i, omega_flist_hz, Y2mA):
+    def do_the_twist_one_frequency(self, p, i, omega_flist_hz, Y2mA, VERSION):
 
         #functions take dimensionless as the frequency argument
         omega = omega_flist_hz[i] * p['M_sec']
 
-        alpha = self._alpha_precessing_angle(omega, p)
-        epsilon = self._epsilon_precessing_angle(omega, p)
+        if VERSION == "v2":
+            alpha = self._alpha_precessing_angle(omega, p, VERSION)
+            epsilon = self._epsilon_precessing_angle(omega, p, VERSION)
+        else:
+            print "Only version implemented is 'v2'"
+            print "Have to update this to new model for alpha and hence epsilon"
+            print "exiting sys.exit(0)"
+            import sys
+            sys.exit(0)
+
 
         alpha -= (p['alpha_at_omega_Ref'] - p['alpha0'])
         epsilon -= p['epsilon_at_omega_Ref']

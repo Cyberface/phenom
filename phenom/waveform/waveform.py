@@ -156,7 +156,8 @@ class Waveform(object):
                         delta_f=input_params['delta_f'],
                         distance=input_params['distance'],
                         fRef=input_params['fRef'], phiRef=input_params['phiRef'],
-                        inclination=input_params['inclination'])
+                        inclination=input_params['inclination'],
+                        VERSION='v2')
             self.flist_Hz = ph.flist_Hz
             self.hptilde = ph.hp
             self.hctilde = ph.hc
