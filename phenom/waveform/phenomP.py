@@ -53,6 +53,22 @@ class PhenomP(object):
         #this changes how alpha and epilon angles are computed
         self.VERSION = VERSION
 
+        ######
+        ######
+        #up here we should probably have something that performs the interpolation
+        #of the phenEOB coefficients.
+        #We do not want to interpolate the coefficients at every frequency point!
+        if self.VERSION == "v2":
+            pass
+        elif self.VERSION == "grid5x6step":
+            print "interpolating phenEOB coefficients"
+            pass
+        else:
+            print("{0} version not recognised".format(self.VERSION))
+            print("add list of possible versions")
+        ######
+        ######
+
         # NOTE PhenomP in LAL assumes that m2>m1. We use the opposite convention here!
 
         # enforce m1 >= m2 and chi1 is on m1
@@ -162,7 +178,7 @@ class PhenomP(object):
         self.hP = self.p['amp_scale'] * aligned_amp * exp(1.j * aligned_phase)
 
 
-        if VERSION == "v2":
+        if self.VERSION == "v2":
             self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, self.VERSION)
             self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, self.VERSION)
         else:
