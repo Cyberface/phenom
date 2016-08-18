@@ -154,6 +154,7 @@ def PhenomPBeta(omega, q, chi1x, chi1z):
     s = Sx / (PhenomPL2PN(v, eta) + Sz)
     s2 = s*s
 
+    #NOTE: Should this sign be here?? It's not in the Wigner function.
     beta = arccos( sign(s) * 1./sqrt(1+s2) )
 
     return beta
