@@ -62,10 +62,15 @@ class PhenomP(object):
             pass
         elif self.VERSION == "grid5x6step":
             print "interpolating phenEOB coefficients"
-            pass
+            from phenom import phenEOB
+            self.phenEOBmodel = phenEOB.InitialisePhenEOBModel(self.VERSION)
+            self.phenEOBalpha = phenEOB.phenEOBalpha(self.phenEOBmodel.ia) #This now has an attribute to compute alpha at any frequency point.
+            # print self.phenEOBalpha.alpha_at_any_omega_ref(0.002, 1.2, 0.34, 0.4)
         else:
             print("{0} version not recognised".format(self.VERSION))
             print("add list of possible versions")
+            import sys
+            sys.exit(1)
         ######
         ######
 
@@ -179,10 +184,13 @@ class PhenomP(object):
 
 
         if self.VERSION == "v2":
-            self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, self.VERSION)
-            self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, self.VERSION)
+            self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "v2")
+            self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
+        elif self.VERSION == "grid5x6step":
+            self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid5x6step")
+            self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
         else:
-            print "Only version implemented is 'v2'"
+            print "Only version implemented is 'v2' and 'grid5x6step'"
             print "Have to update this to new model for alpha and hence epsilon"
             print "exiting sys.exit(0)"
             import sys
@@ -291,6 +299,8 @@ class PhenomP(object):
 
         if VERSION == "v2":
             return PhenomPAlpha(omega, q, chi1x, chi1z, order=-1)
+        elif VERSION == "grid5x6step":
+            return self.phenEOBalpha.alpha_at_any_omega_ref(omega, q, chi1x, chi1z)
         else:
             print "Only version implemented is 'v2'"
             print "Have to update this to new model for alpha and hence epsilon"
@@ -309,6 +319,9 @@ class PhenomP(object):
         chi1z = p['chil'] #TODO dimensionless aligned spin of the largest BH
 
         if VERSION == "v2":
+            return PhenomPEpsilon(omega, q, chi1x, chi1z, order=-1)
+        elif VERSION == "grid5x6step":
+            #NOTE: Falling back to PN epsilon until it can be calculated in phenEOB
             return PhenomPEpsilon(omega, q, chi1x, chi1z, order=-1)
         else:
             print "Only version implemented is 'v2'"
@@ -454,6 +467,9 @@ class PhenomP(object):
         if VERSION == "v2":
             alpha = self._alpha_precessing_angle(omega, p, VERSION)
             epsilon = self._epsilon_precessing_angle(omega, p, VERSION)
+        elif VERSION == "grid5x6step":
+            alpha = self._alpha_precessing_angle(omega, p, VERSION)
+            epsilon = self._epsilon_precessing_angle(omega, p, "v2")
         else:
             print "Only version implemented is 'v2'"
             print "Have to update this to new model for alpha and hence epsilon"
