@@ -1,4 +1,4 @@
-from numpy import sqrt, pi, absolute, ndarray, asarray, concatenate, zeros, max, dot, exp
+from numpy import sqrt, pi, absolute, ndarray, asarray, concatenate, zeros, max, dot, exp, arctan2, cos, sin
 from numpy.linalg import norm
 
 class Constants:
@@ -389,13 +389,13 @@ def CartToPolar(chi1x, chi1z):
     given vector in x, y
     returns the magnitude and polar angle
     measured from x-axis?"""
-    r = np.sqrt( chi1x**2 + chi1z**2 )
-    theta = np.arctan2( chi1x, chi1z)
+    r = sqrt( chi1x**2 + chi1z**2 )
+    theta = arctan2( chi1x, chi1z)
     return r, theta
 
 def PolarToCart(r, theta):
     """PolarToCart(r, theta)
     given r, theta returns z-axis component(along L), x-axis component(in-plane)"""
-    z = r * np.cos(theta)
-    x = r * np.sin(theta)
+    z = r * cos(theta)
+    x = r * sin(theta)
     return x, z
