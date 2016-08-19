@@ -46,6 +46,32 @@ class InitialisePhenEOBModel(object):
             grid5x6step['h5dict_names'] = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8']
 
             ret = grid5x6step
+        elif model_name == 'grid20x20step':
+            grid20x20step= {}
+
+            grid20x20step['q1h5path0'] = '/Users/sebastian/phd/mounts/arcca_mount/projects/phenEOB/condor_runs/q1-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q2h5path0'] = '/Users/sebastian/phd/mounts/arcca_mount/projects/phenEOB/condor_runs/q2-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q3h5path0'] = '/Users/sebastian/phd/mounts/arcca_mount/projects/phenEOB/condor_runs/q3-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q4h5path0'] = '/Users/sebastian/phd/mounts/arcca_mount/projects/phenEOB/condor_runs/q4-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q5h5path0'] = '/Users/sebastian/phd/mounts/arcca_mount/projects/phenEOB/condor_runs/q5-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q6h5path0'] = '/Users/sebastian/phd/mounts/arcca_mount/projects/phenEOB/condor_runs/q6-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q7h5path0'] = '/Users/sebastian/phd/mounts/arcca_mount/projects/phenEOB/condor_runs/q7-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q8h5path0'] = '/Users/sebastian/phd/mounts/arcca_mount/projects/phenEOB/condor_runs/q8-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+
+            grid20x20step['h5paths'] = [
+                grid20x20step['q1h5path0'],
+                grid20x20step['q2h5path0'],
+                grid20x20step['q3h5path0'],
+                grid20x20step['q4h5path0'],
+                grid20x20step['q5h5path0'],
+                grid20x20step['q6h5path0'],
+                grid20x20step['q7h5path0'],
+                grid20x20step['q8h5path0']
+            ]
+
+            grid20x20step['h5dict_names'] = ['q1', 'q2', 'q3', 'q4', 'q5', 'q6', 'q7', 'q8']
+
+            ret = grid20x20step
         else:
             print("model_name = {0} not recognised".format(model_name))
 
