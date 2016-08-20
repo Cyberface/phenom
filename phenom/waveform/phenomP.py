@@ -33,7 +33,7 @@ class PhenomP(object):
 
 
     """docstring for PhenomP"""
-    def __init__(self,  m1=10., m2=10., chi1x=0.,  chi1y=0., chi1z=0., chi2x=0., chi2y=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0., inclination=0., VERSION='v2'):
+    def __init__(self,  m1=10., m2=10., chi1x=0.,  chi1y=0., chi1z=0., chi2x=0., chi2y=0., chi2z=0., f_min=20., f_max=0., delta_f=1/64., distance=1e6 * Constants.PC_SI, fRef=0., phiRef=0., inclination=0., VERSION='v2', phenEOBalpha=None):
         """
         input:
         m1 (Msun)
@@ -47,36 +47,45 @@ class PhenomP(object):
         fRef (reference frequency Hz)
         phiRef (orbital phase at fRef)
         inclination (rad) angle between orbital anglar momentm and z-axis ?
-        VERSION (string) : default 'v2' which is the LAL v2 version. Use this to select newer versions."""
+        VERSION (string) : default 'v2' which is the LAL v2 version. Use this to select newer versions.
+        phenEOBalpha (object containing interpolated phenEOB alpha data.) : Default = None"""
 
         #set version number to be used.
         #this changes how alpha and epilon angles are computed
         self.VERSION = VERSION
+
+        if phenEOBalpha is not None:
+            self.phenEOBalpha = phenEOBalpha
 
         ######
         ######
         #up here we should probably have something that performs the interpolation
         #of the phenEOB coefficients.
         #We do not want to interpolate the coefficients at every frequency point!
-        if self.VERSION == "v2":
-            pass
-        elif self.VERSION == "grid5x6step":
-            print "interpolating phenEOB coefficients"
-            from phenom import phenEOB
-            self.phenEOBmodel = phenEOB.InitialisePhenEOBModel(self.VERSION)
-            self.phenEOBalpha = phenEOB.phenEOBalpha(self.phenEOBmodel.ia) #This now has an attribute to compute alpha at any frequency point.
-            # print self.phenEOBalpha.alpha_at_any_omega_ref(0.002, 1.2, 0.34, 0.4)
-        elif self.VERSION == "grid20x20step":
-            print "interpolating phenEOB coefficients"
-            from phenom import phenEOB
-            self.phenEOBmodel = phenEOB.InitialisePhenEOBModel(self.VERSION)
-            self.phenEOBalpha = phenEOB.phenEOBalpha(self.phenEOBmodel.ia) #This now has an attribute to compute alpha at any frequency point.
-            # print self.phenEOBalpha.alpha_at_any_omega_ref(0.002, 1.2, 0.34, 0.4)
-        else:
-            print("{0} version not recognised".format(self.VERSION))
-            print("add list of possible versions")
-            import sys
-            sys.exit(1)
+        # if self.VERSION == "v2":
+        #     pass
+        # elif self.VERSION == "grid5x6step":
+        #     print "interpolating phenEOB coefficients"
+        #     from phenom import phenEOB
+        #     self.phenEOBmodel = phenEOB.InitialisePhenEOBModel(self.VERSION)
+        #     self.phenEOBalpha = phenEOB.phenEOBalpha(self.phenEOBmodel.ia) #This now has an attribute to compute alpha at any frequency point.
+        #     # print self.phenEOBalpha.alpha_at_any_omega_ref(0.002, 1.2, 0.34, 0.4)
+        # elif self.VERSION == "grid20x20step":
+        #     print "interpolating phenEOB coefficients"
+        #     from phenom import phenEOB
+        #     self.phenEOBmodel = phenEOB.InitialisePhenEOBModel(self.VERSION)
+        #     self.phenEOBalpha = phenEOB.phenEOBalpha(self.phenEOBmodel.ia) #This now has an attribute to compute alpha at any frequency point.
+        #     # print self.phenEOBalpha.alpha_at_any_omega_ref(0.002, 1.2, 0.34, 0.4)
+        # elif self.VERSION == "grid20x20step_ep_eq_al":
+        #     print "interpolating phenEOB coefficients"
+        #     from phenom import phenEOB
+        #     self.phenEOBmodel = phenEOB.InitialisePhenEOBModel(self.VERSION)
+        #     self.phenEOBalpha = phenEOB.phenEOBalpha(self.phenEOBmodel.ia) #This now has an attribute to compute alpha at any frequency point.
+        # else:
+        #     print("{0} version not recognised".format(self.VERSION))
+        #     print("add list of possible versions")
+        #     import sys
+        #     sys.exit(1)
         ######
         ######
 
@@ -196,8 +205,11 @@ class PhenomP(object):
             self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid5x6step")
             self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
         elif self.VERSION == "grid20x20step":
-            self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid5x6step")
+            self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid20x20step")
             self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
+        elif self.VERSION == "grid20x20step_ep_eq_al":
+            self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid20x20step")
+            self.p['epsilon_at_omega_Ref'] = self.p['alpha_at_omega_Ref']
         else:
             print "Only version implemented is 'v2' and 'grid5x6step' and 'grid20x20step'"
             print "Have to update this to new model for alpha and hence epsilon"
@@ -312,6 +324,8 @@ class PhenomP(object):
             return self.phenEOBalpha.alpha_at_any_omega_ref(omega, q, chi1x, chi1z)
         elif VERSION == "grid20x20step":
             return self.phenEOBalpha.alpha_at_any_omega_ref(omega, q, chi1x, chi1z)
+        elif VERSION == "grid20x20step_ep_eq_al":
+            return self.phenEOBalpha.alpha_at_any_omega_ref(omega, q, chi1x, chi1z)
         else:
             print "Only version implemented is 'v2' and 'grid5x6step' and 'grid20x20step'"
             print "Have to update this to new model for alpha and hence epsilon"
@@ -337,6 +351,9 @@ class PhenomP(object):
         elif VERSION == "grid20x20step":
             #NOTE: Falling back to PN epsilon until it can be calculated in phenEOB
             return PhenomPEpsilon(omega, q, chi1x, chi1z, order=-1)
+        elif VERSION == "grid20x20step_ep_eq_al":
+            #Set epsilon equal to alpha
+            return self.phenEOBalpha.alpha_at_any_omega_ref(omega, q, chi1x, chi1z)
         else:
             print "Only version implemented is 'v2' and 'grid5x6step' and 'grid20x20step'"
             print "Have to update this to new model for alpha and hence epsilon"
@@ -487,6 +504,10 @@ class PhenomP(object):
         elif VERSION == "grid20x20step":
             alpha = self._alpha_precessing_angle(omega, p, VERSION)
             epsilon = self._epsilon_precessing_angle(omega, p, "v2")
+        elif VERSION == "grid20x20step_ep_eq_al":
+            #Set epsilon equal to alpha
+            alpha = self._alpha_precessing_angle(omega, p, VERSION)
+            epsilon = alpha
         else:
             print "Only version implemented is 'v2' and 'grid5x6step' and 'grid20x20step'"
             print "Have to update this to new model for alpha and hence epsilon"

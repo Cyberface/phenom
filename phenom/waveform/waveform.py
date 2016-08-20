@@ -97,8 +97,55 @@ class Waveform(object):
         #are defined. For examples only time domain approximants need
         #a 'delta_t'. It doesn't really mean anything for frequency domain.
 
-        # print "calling _generate_fd_waveform"
-        self._generate_fd_waveform(self.input_params)
+        if self.input_params['approximant'] == 'IMRPhenomPv3':
+            self.VERSION = 'grid20x20step'
+            # self.VERSION = 'grid5x6step'
+            self._setup_IMRPhenomPv3_interpolation(self.VERSION)
+        else:
+            # print "calling _generate_fd_waveform"
+            self._generate_fd_waveform(self.input_params)
+
+    def _setup_IMRPhenomPv3_interpolation(self, VERSION):
+        """if calling IMRPhenomPv3 then the phenEOB coefficients
+        should only be computed once at the beginning.
+        To make this work in my infrastructure IMRPhenomPv3
+        will be called differently to other approximants.
+        You call an instance of IMRPhenomPv3 once then you
+        can evaluate that for many different systems."""
+
+        # print "interpolating phenEOB coefficients"
+        from phenom import phenEOB
+        self.phenEOBmodel = phenEOB.InitialisePhenEOBModel(VERSION)
+        self.phenEOBalpha = phenEOB.phenEOBalpha(self.phenEOBmodel.ia)
+
+
+    def phenompv3(self, input_params):
+        """same as self._generate_fd_waveform but
+        specifically for IMRPhenomPv3 as this has
+        to interpolate the phenEOB coefficients before
+        it can generate a waveform.
+        This way, the interpolation is factored out of the
+        main code to improve efficiency.
+        """
+        cfac = cos(input_params['inclination']);
+        pfac = 0.5 * (1. + cfac*cfac);
+
+
+        from phenom.waveform import PhenomP
+        ph = PhenomP(m1=input_params['m1'], m2=input_params['m2'],
+                    chi1x=input_params['chi1x'], chi1y=input_params['chi1y'], chi1z=input_params['chi1z'],
+                    chi2x=input_params['chi2x'], chi2y=input_params['chi2y'], chi2z=input_params['chi2z'],
+                    f_min=input_params['f_min'], f_max=input_params['f_max'],
+                    delta_f=input_params['delta_f'],
+                    distance=input_params['distance'],
+                    fRef=input_params['fRef'], phiRef=input_params['phiRef'],
+                    inclination=input_params['inclination'],
+                    VERSION=self.VERSION,
+                    phenEOBalpha=self.phenEOBalpha)
+        self.flist_Hz = ph.flist_Hz
+        self.hptilde = ph.hp
+        self.hctilde = ph.hc
+
 
     def _generate_fd_waveform(self, input_params):
         """
