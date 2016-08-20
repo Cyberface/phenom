@@ -206,7 +206,8 @@ class PhenomP(object):
             self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
         elif self.VERSION == "grid20x20step":
             self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid20x20step")
-            self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
+            self.p['epsilon_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid20x20step")
+            # self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
         elif self.VERSION == "grid20x20step_ep_eq_al":
             self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid20x20step")
             self.p['epsilon_at_omega_Ref'] = self.p['alpha_at_omega_Ref']
@@ -503,7 +504,8 @@ class PhenomP(object):
             epsilon = self._epsilon_precessing_angle(omega, p, "v2")
         elif VERSION == "grid20x20step":
             alpha = self._alpha_precessing_angle(omega, p, VERSION)
-            epsilon = self._epsilon_precessing_angle(omega, p, "v2")
+            epsilon = self._alpha_precessing_angle(omega, p, VERSION)
+            # epsilon = self._epsilon_precessing_angle(omega, p, "v2")
         elif VERSION == "grid20x20step_ep_eq_al":
             #Set epsilon equal to alpha
             alpha = self._alpha_precessing_angle(omega, p, VERSION)
