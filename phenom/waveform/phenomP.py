@@ -302,6 +302,7 @@ class PhenomP(object):
                     # fRef=0., phiRef=0.)
                     fRef=p['fRef'], phiRef=p['phiRef'],
                     finspin_func="FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH",
+                    # finspin_func="FinalSpin0815",
                     chip=p['chip'])
         logger.info("finspin = {0}".format(ph.model_pars['finspin']))
         #could change this to generate at a single frequency point.
