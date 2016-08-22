@@ -5,7 +5,7 @@ from phenom.utils import swsh
 from phenom.waveform import PhenomD
 from phenom.pn.pn import PhenomPAlpha, PhenomPBeta, PhenomPEpsilon, PhenomPL2PN
 
-from numpy import exp, arange, zeros, array, conj, sin, cos, dot, max, arccos, arctan2, unwrap, angle
+from numpy import exp, arange, zeros, array, conj, sin, cos, dot, max, arccos, arctan2, unwrap, angle, asarray
 from numpy.linalg import norm
 
 # import logging
@@ -205,9 +205,13 @@ class PhenomP(object):
             self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid5x6step")
             self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
         elif self.VERSION == "grid20x20step":
+            #compute epsilon function for all frequencies being considered.
+            self.epsilon_func = self._compute_epsilon_from_alpha_and_beta(self.p)
             self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid20x20step")
             # self.p['epsilon_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid20x20step")
-            self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
+            # self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
+            # self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "grid20x20step")
+            self.p['epsilon_at_omega_Ref'] = self.epsilon_func(self.p['omega_Ref'])
         elif self.VERSION == "grid20x20step_ep_eq_al":
             self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid20x20step")
             self.p['epsilon_at_omega_Ref'] = self.p['alpha_at_omega_Ref']
@@ -362,6 +366,35 @@ class PhenomP(object):
             import sys
             sys.exit(0)
 
+    def _compute_epsilon_from_alpha_and_beta(self, p):
+        """input
+        omega : float, orbital angular frequency
+        p : parameter dictionary
+        return
+        epsilon as a function of omega"""
+        #equation: \dot{\epsilon} = \dot{\apha} * cos(\beta)
+        #dimensionless orbital angular frequency
+        Mom_list = arange(p['f_min'], p['f_max'], p['delta_f']) * Constants.LAL_PI * p['M_sec']
+        alpha = []
+        for Mom in Mom_list:
+            alpha.append(self._alpha_precessing_angle(Mom, p, "grid20x20step"))
+        alpha = asarray(alpha)
+        beta = PhenomPBeta(Mom_list, p['q'], p['chi1x'], p['chi1z'])
+        from scipy.interpolate import UnivariateSpline
+        ialpha = UnivariateSpline(Mom_list, alpha, s=0, k=5)
+        ibeta = UnivariateSpline(Mom_list, beta, s=0, k=5)
+
+        #derivative of alpha
+        ialpha_deriv = ialpha.derivative()
+
+        iepsilon_deriv_list = ialpha_deriv(Mom_list) * cos(ibeta(Mom_list))
+        iepsilon_deriv = UnivariateSpline(Mom_list, iepsilon_deriv_list, s=0, k=5)
+
+        epsilon_func = iepsilon_deriv.antiderivative()
+
+        return epsilon_func
+
+
 
     def _PhenomPCalculateModelParameters(self, p):
         """
@@ -505,7 +538,9 @@ class PhenomP(object):
         elif VERSION == "grid20x20step":
             alpha = self._alpha_precessing_angle(omega, p, VERSION)
             # epsilon = self._alpha_precessing_angle(omega, p, VERSION)
-            epsilon = self._epsilon_precessing_angle(omega, p, "v2")
+            # epsilon = self._epsilon_precessing_angle(omega, p, "v2")
+            # epsilon = self._epsilon_precessing_angle(omega, p, VERSION)
+            epsilon = self.epsilon_func(omega)
         elif VERSION == "grid20x20step_ep_eq_al":
             #Set epsilon equal to alpha
             alpha = self._alpha_precessing_angle(omega, p, VERSION)
