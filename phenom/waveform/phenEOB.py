@@ -20,8 +20,8 @@ class InitialisePhenEOBModel(object):
 
     def _preset_models(self, model_name):
 
-        # rootdir = '/Users/sebastian/phd/mounts/arcca_mount/'
-        rootdir = '/home/spx8sk/'
+        rootdir = '/Users/sebastian/phd/mounts/arcca_mount/'
+        # rootdir = '/home/spx8sk/'
 
         if model_name == 'grid5x6step':
             grid5x6step= {}
@@ -101,6 +101,38 @@ class phenEOBalpha(object):
 
     def get_coeffs(self, q, chimag, theta):
 
+        from phenom import PolarToCart
+        chi1x, chi1z = PolarToCart(chimag, theta)
+
+        #check boundary for model
+        chimag_low = 0.01
+        chimag_high = 0.99
+        theta_low = 2.*np.pi/180.
+        theta_high = 178*np.pi/180.
+
+
+        #TODO!
+        #Add propery boundary checks
+
+
+
+#         chi1x_low, chi1z_low = PolarToCart(chimag_low, theta_low)
+#         chi1x_high, chi1z_high = PolarToCart(chimag_high, theta_high)
+#         print chi1x_low, chi1z_low
+#         print chi1x_high, chi1z_high
+
+        # commented out 23/8/16
+        if np.sqrt(chi1x**2.+chi1z**2.) < chimag_low:
+            print "From function get_coeffs"
+            print "np.sqrt(chi1x**2.+chi1z**2.) = {0} is invalid. lower boundary = {1}".format(np.sqrt(chi1x**2.+chi1z**2.), chimag_low)
+            import sys
+            sys.exit(1)
+        if np.sqrt(chi1x**2.+chi1z**2.) > chimag_high:
+            print "From function get_coeffs"
+            print "np.sqrt(chi1x**2.+chi1z**2.) = {0} is invalid. upper boundary = {1}".format(np.sqrt(chi1x**2.+chi1z**2.), chimag_high)
+            import sys
+            sys.exit(1)
+
         p1_coeff_names = ['p1_0', 'p1_1', 'p1_2', 'p1_3']
         p2_coeff_names = ['p2_0', 'p2_1']
 
@@ -114,7 +146,43 @@ class phenEOBalpha(object):
 
         return np.asarray(p1_coeff_values), np.asarray(p2_coeff_values)
 
-    def alpha_at_any_omega_ref(self, omega, q, chi1x, chi1z, pnorder=-1):
+    def alpha_at_any_omega_ref_args_coeffs(self, omega, p1coeffs, p2coeffs, q, chi1x, chi1z, pnorder=-1):
+        """
+        this function computes the alpha angle at any frequency. It takes as it's
+        argument the phenEOB coefficients and physical parameters
+        """
+
+
+        xjoin = 0.04
+        #need to correct for xjoin...
+        if omega <= xjoin:
+            #then use part 1
+            alpha = self.p1_func(omega, q, chi1x, chi1z, pnorder, *p1coeffs)
+        elif omega > xjoin:
+            #then use part 2
+            alpha = self.p2_func(omega, *p2coeffs)
+
+            #simply translational alignment at xjoin
+            #I want this function to be callable at any frequency so that it can
+            #be used in the ROQs
+            #so applying the shift like this
+
+            p1_alpha_xjoin = self.p1_func(xjoin, q, chi1x, chi1z, pnorder, *p1coeffs)
+            p2_alpha_xjoin = self.p2_func(xjoin, *p2coeffs)
+
+            shift = p1_alpha_xjoin - p2_alpha_xjoin
+            alpha += shift
+        else:
+            print("Should never get to here")
+
+        return alpha
+
+    def _alpha_at_any_omega_ref(self, omega, q, chi1x, chi1z, pnorder=-1):
+        """
+        OLD FUNCTION THAT CAN STILL BE USED TO GET ALPHA PREDICTION.
+        IT IS NOT USED ANYMORE BECAUSE IT CALL get_coeffs EVERYTIME AND
+        IS THEREFORE INEFFICIENT.
+        """
         from phenom import CartToPolar
         chimag, theta = CartToPolar(chi1x, chi1z)
 

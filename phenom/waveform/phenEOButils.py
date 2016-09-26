@@ -115,8 +115,8 @@ class BestfitPrediction(object):
 
 class InterpolateAlpha(object):
     def __init__(self, h5paths, h5dict_names):
-        self.modelpath = '/home/spx8sk/git/phenEOB/convergence/2d/'
-        # self.modelpath = '/Users/sebastian/git/phenEOB/convergence/2d/'
+        # self.modelpath = '/home/spx8sk/git/phenEOB/convergence/2d/'
+        self.modelpath = '/Users/sebastian/git/phenEOB/convergence/2d/'
         #bfp dict is the 'best fit prediction' dictionary
         #it contains the calibration points and the values of the best fit coefficients
         #each entry is for a particular mass-ratio spin-grid which corresponds to
@@ -148,7 +148,7 @@ class InterpolateAlpha(object):
         self.bfturps = self.construct_interpolants(self.grid, self.bfc, self.p1_num_bf_coeffs, self.p2_num_bf_coeffs)
 
         #compute residuals of interpolant
-        self.residuals = self.compute_residuals(self.grid, self.bfc, self.p1_num_bf_coeffs, self.p2_num_bf_coeffs, self.bfturps)
+        # self.residuals = self.compute_residuals(self.grid, self.bfc, self.p1_num_bf_coeffs, self.p2_num_bf_coeffs, self.bfturps)
 
 
     def _populate_bfp(self, h5paths, h5dict_names):

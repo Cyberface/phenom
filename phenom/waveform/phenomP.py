@@ -205,6 +205,10 @@ class PhenomP(object):
             self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid5x6step")
             self.p['epsilon_at_omega_Ref'] = self._epsilon_precessing_angle(self.p['omega_Ref'], self.p, "v2")
         elif self.VERSION == "grid20x20step":
+            # get the phenEOB coefficients. Only need to get them once.
+            from phenom import CartToPolar
+            self.p['chimag'], self.p['theta'] = CartToPolar(self.p['chip'], self.p['chil'])
+            self.p['phenEOB_p1'], self.p['phenEOB_p2'] = self.phenEOBalpha.get_coeffs(self.p['q'], self.p['chimag'], self.p['theta'])
             #compute epsilon function for all frequencies being considered.
             self.epsilon_func = self._compute_epsilon_from_alpha_and_beta(self.p)
             self.p['alpha_at_omega_Ref'] = self._alpha_precessing_angle(self.p['omega_Ref'], self.p, "grid20x20step")
@@ -329,7 +333,9 @@ class PhenomP(object):
         elif VERSION == "grid5x6step":
             return self.phenEOBalpha.alpha_at_any_omega_ref(omega, q, chi1x, chi1z)
         elif VERSION == "grid20x20step":
-            return self.phenEOBalpha.alpha_at_any_omega_ref(omega, q, chi1x, chi1z)
+            p1coeffs = p['phenEOB_p1']
+            p2coeffs = p['phenEOB_p2']
+            return self.phenEOBalpha.alpha_at_any_omega_ref_args_coeffs(omega, p1coeffs, p2coeffs, q, chi1x, chi1z)
         elif VERSION == "grid20x20step_ep_eq_al":
             return self.phenEOBalpha.alpha_at_any_omega_ref(omega, q, chi1x, chi1z)
         else:

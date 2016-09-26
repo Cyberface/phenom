@@ -399,3 +399,40 @@ def PolarToCart(r, theta):
     z = r * cos(theta)
     x = r * sin(theta)
     return x, z
+
+def invfft(f, htilde, f0, start_window_width=2., zpf=2):
+    """
+    f : numpy array. array of frequencies (Hz)
+    htilde : numpy array. fourier domain strain
+    f0 : flaot. start frequency of lower window (Hz)
+    start_window_width : float. width of start window (Hz)
+    zpf : int. factor to zero pad to.
+    returns
+    =======
+    t : numpy array. times series of ifft
+    h : numpy array. time domain strain (ifft of htilde)
+    """
+    from phenom.utils import planck_taper
+    from scipy.fftpack import ifft
+
+    # to avoid wrap around perform a phase shift
+    # in a relatively arbitrary way
+    phase = np.unwrap( np.angle( htilde ) )
+    phase_shift = phase[-1] - phase[0]
+
+    htilde *= np.exp( -1.j * 2. * np.pi * f * phase_shift)
+
+    start_window = planck_taper( f, f0, f0 + start_window_width )
+
+    htilde *= start_window
+
+    df = f[1] - f[0]
+    dt = 1.0 / ( df * len(htilde) )
+    maxTime = dt * len(htilde)
+
+    # compute ifft
+    h = ifft( htilde ) / dt
+
+    times = np.arange( 0., maxTime, dt )
+
+    return times, h
