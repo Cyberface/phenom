@@ -432,10 +432,13 @@ def myifft(f, htilde):
     # minimum, non-zero frequ
     f0 = f[1]
 
-    extra_cycles = 6.
+    # try to mimic what is done
+    # in XLALSimInspiralTDFromFD
+    # doesn't always work though?
+    extra_cycles = 3.
     tshift = extra_cycles / f0 * dt
 
-    htilde *= exp( -1.j * 2. * pi * df *  tshift )
+    htilde *= exp( -1.j * 2. * pi * f *  tshift )
 
     # compute ifft
     h = ifft( htilde ) / dt
