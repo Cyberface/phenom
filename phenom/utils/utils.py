@@ -377,7 +377,7 @@ def planck_taper(tlist, t1, t2):
 
     N = len(tlist)
 
-    tout = np.zeros( N )
+    tout = zeros( N )
 
     for i, t in enumerate(tlist):
         if t<=t1:
@@ -386,8 +386,8 @@ def planck_taper(tlist, t1, t2):
             tout[i] = 1.
         else:
             FAC = ( (t2-t1) / (t-t1) ) + ( (t2-t1) / (t-t2) )
-            tout[i] = 1. / ( np.exp( FAC ) + 1. )
-    return np.asarray(tout)
+            tout[i] = 1. / ( exp( FAC ) + 1. )
+    return asarray(tout)
 
 def CartToPolar(chi1x, chi1z):
     """CartToPolar(chi1x, chi1z)
