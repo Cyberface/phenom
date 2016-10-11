@@ -1,5 +1,6 @@
-from numpy import sqrt, pi, absolute, ndarray, asarray, concatenate, zeros, max, dot, exp, arctan2, cos, sin
+from numpy import sqrt, pi, absolute, ndarray, asarray, concatenate, zeros, max, dot, exp, arctan2, cos, sin, arange
 from numpy.linalg import norm
+from scipy.fftpack import fft, fftfreq, fftshift, ifft
 
 class Constants:
     # >>> import lal
@@ -404,3 +405,41 @@ def PolarToCart(r, theta):
     z = r * cos(theta)
     x = r * sin(theta)
     return x, z
+
+def my_fft(t, h):
+
+    # compute frequencies
+    dt = t[1] - t[0]
+    N = len(h)
+    f = fftfreq( N, dt )
+
+    # compute fft
+    htilde = fft( h ) * dt
+
+    return f, htilde
+
+def my_ifft(f, htilde):
+
+    # compute times
+    df = f[1] - f[0]
+    N = len(htilde)
+    dt = 1. / ( N * df )
+    Tmax = N * dt
+
+    t = arange( 0., Tmax, dt )
+
+    # phase shift to avoid wrap around
+    # minimum, non-zero frequ
+    f0 = f[1]
+
+    extra_cycles = 6.
+    tshift = extra_cycles / f0 * dt
+
+    htilde *= exp( -1.j * 2. * pi * df *  tshift )
+
+    # compute ifft
+    h = ifft( htilde ) / dt
+
+    return t, h
+
+#
