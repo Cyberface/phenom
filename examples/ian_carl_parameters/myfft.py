@@ -5,6 +5,10 @@ import scipy
 from scipy.fftpack import fft, fftfreq, fftshift, ifft
 
 def fft(t, h):
+    """
+    t : in units of seconds
+    h : in units of strain
+    """
     dt = t[1] - t[0]
     N = len(t)
 
@@ -17,6 +21,7 @@ def fft(t, h):
 
 def myifft(f, htilde, f0, taper_low_width):
     """
+    f : in units of Hz
     f0 : float, start frequency of taper
     taper_low_width : float, width in Hz of taper
     """
@@ -24,7 +29,18 @@ def myifft(f, htilde, f0, taper_low_width):
     phase_shift = (phase[0] - phase[-1])
     # phase_shift = 0.
     # phase_shift = (phase[-500] - phase[-1])
+    phase_shift = phase[-1]
+
+
+    extra_cycles = 6.0
+    f_min = f0 + (f[1]-f[0])
+    textra = int( np.ceil( extra_cycles / f_min) )
+
+    # htilde *= np.exp( -1.j * 2. * np.pi * f * textra)
     htilde *= np.exp( -1.j * 2. * np.pi * f * phase_shift)
+
+
+
 
     win_minus = phenom.planck_taper( f, f0, f0 + taper_low_width )
     htilde *= win_minus

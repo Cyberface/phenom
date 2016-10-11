@@ -39,9 +39,9 @@ def invfft(f, htilde, f0, start_window_width=2., zpf=2):
     htilde *= np.exp( -1.j * 2. * np.pi * f * phase_shift)
     # htilde *= np.exp( -1.j * 2. * np.pi * f * textra)
 
-    start_window = planck_taper( f, f0, f0 + start_window_width )
+    # start_window = planck_taper( f, f0, f0 + start_window_width )
 
-    htilde *= start_window
+    # htilde *= start_window
 
     # htilde = pad_to_pow_2(htilde, 1)
 
