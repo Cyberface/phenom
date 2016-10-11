@@ -406,7 +406,7 @@ def PolarToCart(r, theta):
     x = r * sin(theta)
     return x, z
 
-def my_fft(t, h):
+def myfft(t, h):
 
     # compute frequencies
     dt = t[1] - t[0]
@@ -418,7 +418,7 @@ def my_fft(t, h):
 
     return f, htilde
 
-def my_ifft(f, htilde):
+def myifft(f, htilde):
 
     # compute times
     df = f[1] - f[0]
