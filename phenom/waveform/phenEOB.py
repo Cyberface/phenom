@@ -20,20 +20,21 @@ class InitialisePhenEOBModel(object):
 
     def _preset_models(self, model_name):
 
-        rootdir = '/Users/sebastian/phd/mounts/arcca_mount/'
+        rootdir = '/Users/sebastian/work/mnt/arcca_mount/'
+        # rootdir = '/Users/sebastian/phd/mounts/arcca_mount/'
         # rootdir = '/home/spx8sk/'
 
         if model_name == 'grid5x6step':
             grid5x6step= {}
 
-            grid5x6step['q1h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q1-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid5x6step['q2h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q2-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid5x6step['q3h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q3-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid5x6step['q4h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q4-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid5x6step['q5h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q5-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid5x6step['q6h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q6-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid5x6step['q7h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q7-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid5x6step['q8h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q8-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid5x6step['q1h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q1-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid5x6step['q2h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q2-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid5x6step['q3h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q3-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid5x6step['q4h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q4-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid5x6step['q5h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q5-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid5x6step['q6h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q6-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid5x6step['q7h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q7-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid5x6step['q8h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q8-spin-grid-5x6/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
 
             grid5x6step['h5paths'] = [
                 grid5x6step['q1h5path0'],
@@ -52,14 +53,14 @@ class InitialisePhenEOBModel(object):
         elif model_name == 'grid20x20step' or model_name == 'grid20x20step_ep_eq_al' or model_name == 'grid20x20step_FITBETA':
             grid20x20step= {}
 
-            grid20x20step['q1h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q1-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid20x20step['q2h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q2-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid20x20step['q3h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q3-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid20x20step['q4h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q4-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid20x20step['q5h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q5-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid20x20step['q6h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q6-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid20x20step['q7h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q7-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
-            grid20x20step['q8h5path0'] = rootdir + 'projects/phenEOB/condor_runs/q8-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q1h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q1-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q2h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q2-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q3h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q3-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q4h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q4-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q5h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q5-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q6h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q6-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q7h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q7-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
+            grid20x20step['q8h5path0'] = rootdir + 'projects/phenEOB-OLD/condor_runs/q8-spin-grid-20x20/bf_model_coeffs/p1_m1_p2_m2_None_0.04_0.02_0.1.h5'
 
             grid20x20step['h5paths'] = [
                 grid20x20step['q1h5path0'],
