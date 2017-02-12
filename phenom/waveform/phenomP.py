@@ -13,7 +13,8 @@ from numpy.linalg import norm
 # logging.debug('This is a log message.')
 
 import logging
-logging.basicConfig(filename='log_filename.txt', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+# logging.basicConfig(filename='log_filename.txt', level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
+logging.basicConfig(level=logging.DEBUG, format='%(asctime)s - %(levelname)s - %(message)s')
 logger = logging.getLogger()
 # logger.setLevel(logging.DEBUG)
 logger.setLevel(logging.CRITICAL)
