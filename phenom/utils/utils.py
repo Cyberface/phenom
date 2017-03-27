@@ -44,11 +44,11 @@ def pad_to_pow_2(arr, zpf):
     #if even, add to both sides equally
     #if odd, add extra one to left side
     if (to_add % 2) == 0:
-        to_add_left = to_add / 2
-        to_add_right = to_add / 2
+        to_add_left = int(to_add / 2)
+        to_add_right = int(to_add / 2)
     else:
-        to_add_left = to_add / 2 + 1
-        to_add_right = to_add / 2
+        to_add_left = int(to_add / 2 + 1)
+        to_add_right = int(to_add / 2)
 
     left = zeros(initial_pad_left + to_add_left)
     right = zeros(initial_pad_right + to_add_right)
