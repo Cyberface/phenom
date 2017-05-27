@@ -642,7 +642,7 @@ class PhenomDInternalsPhase(object):
         + (-0.05585343136869692 + 1.7516580039343603*eta - 5.990208965347804*eta2)*xi2 \
         + (-0.017945336522161195 + 0.5965097794825992*eta - 2.0608879367971804*eta2)*xi3
 
-    def PhiMRDAnsatzInt(self, Mf, model_pars, rholm=1.0 ):
+    def PhiMRDAnsatzInt(self, Mf, model_pars, rholm=1.0, **kwargs ):
         """
         Ansatz for the merger-ringdown phase Equation 14 arXiv:1508.07253
         """
@@ -664,7 +664,7 @@ class PhenomDInternalsPhase(object):
         #
         return ans
 
-    def DPhiMRD(self, Mf, model_pars, eta, rholm=1.0 ):
+    def DPhiMRD(self, Mf, model_pars, eta, rholm=1.0, **kwargs ):
         """
         First frequency derivative of PhiMRDAnsatzInt
         """
