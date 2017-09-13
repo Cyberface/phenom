@@ -1,0 +1,60 @@
+#!/usr/bin/env python
+#
+# Copyright (C) 2017 Sebastian Khan
+#
+# This program is free software: you can redistribute it and/or modify
+# it under the terms of the GNU General Public License as published by
+# the Free Software Foundation, either version 3 of the License, or
+# (at your option) any later version.
+#
+# This program is distributed in the hope that it will be useful,
+# but WITHOUT ANY WARRANTY; without even the implied warranty of
+# MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+# GNU General Public License for more details.
+#
+# You should have received a copy of the GNU General Public License
+# along with this program.  If not, see <http://www.gnu.org/licenses/>.
+
+"""
+return the ringdown frequency
+using the model used in phenomD
+"""
+
+import phenom
+import argparse
+import sys
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+
+    parser.add_argument("--eta", help="symmetric mass ratio", type=float, default=None)
+    parser.add_argument("--q", help="mass-raito", type=float, default=None)
+    parser.add_argument("--mtot", help="total mass (Msun)", type=float, default=100.)
+    #parser.add_argument("--m1", help="mass of body 1 (Msun)", type=float)
+    #parser.add_argument("--m2", help="mass of body 2 (Msun)", type=float)
+    parser.add_argument("--chi1z", help="spin on larger BH", type=float, default=0.)
+    parser.add_argument("--chi2z", help="spin on smaller BH", type=float, default=0.)
+
+
+    args = parser.parse_args()
+    if args.q and args.eta:
+        print("q and eta given. Only use one.")
+        sys.exit(1)
+    if args.q:
+        if args.q < 1.:
+            print("convention is q=m1/m2 > 1")
+            sys.exit(1)
+        args.eta = phenom.eta_from_q(args.q)
+    if args.eta is None  and args.q is None:
+       print("please supply eta or q")
+       sys.exit(1)
+
+    print "total mass = {0} Msun".format(args.mtot)
+
+    fin_spin = phenom.remnant.FinalSpin0815(args.eta, args.chi1z, args.chi2z)
+    fring = phenom.remnant.fring(args.eta, args.chi1z, args.chi2z, fin_spin)
+    fdamp = phenom.remnant.fdamp(args.eta, args.chi1z, args.chi2z, fin_spin)
+    print "ringdown frequency in geometric units = ", fring
+    print "imaginary part of the ringdown frequency = ", fdamp
+    print "ringdown frequency in Hz = ", phenom.MftoHz(fring, args.mtot)
+

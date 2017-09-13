@@ -13,4 +13,5 @@ setup(name='phenom',
       packages=find_packages(),
       url='https://github.com/Cyberface/phenom',
       download_url='https://github.com/Cyberface/phenom/archive/master.zip',
+      scripts = ['bin/phenom-ringdown-frequency']
      )
