@@ -384,3 +384,26 @@ def planck_taper(tlist, t1, t2):
         else:
             tout.append(1./(exp((t2-t1)/(t-t1)+(t2-t1)/(t-t2))+1))
     return asarray(tout)
+
+def velocity_to_frequency(v, M):
+    return v**(3.0) / (M * Constants.MTSUN_SI * Constants.LAL_PI)
+
+def frequency_to_velocity(f, M):
+    return (Constants.LAL_PI * M * Constants.MTSUN_SI * f)**(1.0/3.0)
+
+def f_SchwarzISCO(M):
+    """
+    Innermost stable circular orbit (ISCO) for a test particle 
+    orbiting a Schwarzschild black hole
+    Parameters
+    ----------
+    M : float or numpy.array
+        Total mass in solar mass units
+    Returns
+    -------
+    f : float or numpy.array
+        Frequency in Hz
+    """
+    return velocity_to_frequency((1.0/6.0)**(0.5), M)
+
+
