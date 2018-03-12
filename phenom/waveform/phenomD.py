@@ -1,7 +1,8 @@
 from __future__ import division
 
+import sys
 from phenom.waveform.waveform import Waveform
-from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, pow_2_of, pow_3_of, pow_4_of, Constants
+from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, pow_2_of, pow_3_of, pow_4_of, Constants, HztoMf, StoM
 from phenom.utils.remnant import fring, fdamp, FinalSpin0815, FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH
 from numpy import sqrt, pi, arange, zeros, exp, fabs, log, arctan, angle, unwrap, absolute
 
@@ -1419,6 +1420,33 @@ class PhenomD(PhenomDInternals):
             PhiInt = 1.0/eta * self.PhiIntAnsatz(Mf, model_pars) + model_pars['C1Int'] + model_pars['C2Int'] * Mf
             return PhiInt
 
+    def IMRPhenomDPhaseDerivFrequencyPoint(self, Mf, eta, model_pars, rholm=1.0, taulm=1.0):
+        """
+        ONLY TESTED FOR (l,m)=(2,2) MODE
+
+        Implementing https://git.ligo.org/lscsoft/lalsuite/blob/master/lalsimulation/src/LALSimIMRPhenomD.c#L488
+
+        Returns the value of the frequency derivative of the phase.
+        Used to compute the chirp time of a phenomD waveform.
+        """
+        pn = model_pars['pn']
+
+        # split the calculation to just 1 of 3 possible mutually exclusive ranges
+        fInsJoin = self.PHI_fJoin_INS
+        fMRDJoin = 0.5*model_pars['fRD']
+        phi_prefactors = model_pars['phi_prefactors']
+
+        if (Mf <= fInsJoin):	# Inspiral rangee
+            DPhiIns = self.DPhiInsAnsatzInt(Mf, self.powers_of_pi, model_pars, eta)
+            return DPhiIns
+        elif (Mf >= fMRDJoin):	# MRD range
+            DPhiMRDval = self.DPhiMRD(Mf, model_pars, eta, rholm, taulm) + model_pars['C2MRD']
+            return DPhiMRDval
+        else:
+            #	Intermediate range
+            DPhiInt = self.DPhiIntAnsatz(Mf, model_pars, eta) + model_pars['C2Int']
+            return DPhiInt
+
     def computetimeshift(self, model_pars, eta):
         # //time shift so that peak amplitude is approximately at t=0
         # //For details see https://www.lsc-group.phys.uwm.edu/ligovirgo/cbcnote/WaveformsReview/IMRPhenomDCodeReview/timedomain
@@ -1469,3 +1497,40 @@ class PhenomD(PhenomDInternals):
         """
         self.amp = absolute(htilde)
         self.phase = unwrap(angle(htilde))
+
+    def ChirpTime(self, fStart, units='s'):
+        """
+        input:
+            fStart (start frequency in Hz)
+            units = 's' or 'M' either seconds or in geometic units of the total Mass
+
+        output: the chirp time in seconds
+        Return the chirp time in seconds or geometic units for this system
+        """
+
+        Mf_PeakFreq = self.model_pars['fmaxCalc']
+        Hz_PeakFreq = Mf_PeakFreq / self.model_pars['M_sec']
+
+        Hz_Start = fStart
+        Mf_Start = HztoMf(fStart, self.p['Mtot'])
+
+        if (Hz_Start > Hz_PeakFreq):
+            print("Error: Peak frequency is greater than start frequency")
+            sys.exit(1)
+
+        dphiSt = self.IMRPhenomDPhaseDerivFrequencyPoint(Mf_Start, self.p['eta'], self.model_pars, rholm=1.0, taulm=1.0)
+        dphifRD = self.IMRPhenomDPhaseDerivFrequencyPoint(Mf_PeakFreq, self.p['eta'], self.model_pars, rholm=1.0, taulm=1.0)
+
+        dphidiff = dphifRD - dphiSt
+
+        ChirpTimeSec = dphidiff / 2. / Constants.LAL_PI * self.model_pars['M_sec']
+
+        if units == 's':
+            ChirpTimeSec = ChirpTimeSec
+        elif units == 'M':
+            ChirpTimeSec = StoM(ChirpTimeSec, self.p['Mtot'])
+        else:
+            print("Units must be either 's' or 'M'")
+            sys.exit(1)
+
+        return ChirpTimeSec
