@@ -54,6 +54,11 @@ if __name__ == "__main__":
     fin_spin = phenom.remnant.FinalSpin0815(args.eta, args.chi1z, args.chi2z)
     fring = phenom.remnant.fring(args.eta, args.chi1z, args.chi2z, fin_spin)
     fdamp = phenom.remnant.fdamp(args.eta, args.chi1z, args.chi2z, fin_spin)
+
+    finalmass = (1. - phenom.remnant.EradRational0815(args.eta, args.chi1z, args.chi2z)) * args.mtot
+
+
+    print "final mass = {0} Msun".format(finalmass)
     print "ringdown frequency in geometric units = ", fring
     print "imaginary part of the ringdown frequency = ", fdamp
     print "ringdown frequency in Hz = ", phenom.MftoHz(fring, args.mtot)
