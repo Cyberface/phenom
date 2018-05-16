@@ -393,10 +393,10 @@ class PhenomP(object):
         Rotate components of a vector aboyt y axis
         y-component doesn't change so we don't include it.
         It's just the usual rotation matrix."""
-    	tmp1 = vx*cos(angle) + vz*sin(angle)
-    	tmp2 = - vx*sin(angle) + vz*cos(angle)
-    	vx = tmp1
-    	vz = tmp2
+        tmp1 = vx*cos(angle) + vz*sin(angle)
+        tmp2 = - vx*sin(angle) + vz*cos(angle)
+        vx = tmp1
+        vz = tmp2
         return vx, vz
 
 
