@@ -4,13 +4,16 @@ data for the phenomp version 2 and version 3
 precession angles in a common API
 """
 
+import numpy as np
+from phenom import HztoMf, PhenomPAlpha, PhenomPEpsilon, PhenomPBeta
+
 try:
     import lal
 except ImportError:
     raise ImportError('could not import lal')
 
 try:
-    import lalsimulation
+    import lalsimulation as lalsim
 except ImportError:
     raise ImportError('could not import lalsimulation')
 
@@ -40,6 +43,7 @@ def evaluate_phenomPv3_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref,
     input: m1, m2 in SI units
     spins are dimensionless
     evaluated for frequencies flist (Hz)
+    fref : gw reference frequency
     returns alpha, beta and epsilon angles
 
     ExpansionOrder=-1 (can be 1,2,3,4,5,-1) the expansion order to use in phiz and zeta
@@ -71,27 +75,37 @@ def evaluate_phenomPv3_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref,
 
     return phiz_of_f.data, np.arccos(costhetaL_of_f.data), zeta_of_f.data
 
-def evaluate_phenomPv2_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z):
+def evaluate_phenomPv2_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref):
     """
     flist = Real8Sequence of Orbital frequency
     input: m1, m2 in SI units
     spins are dimensionless
+    fref : gw reference frequency
     returns alpha, beta and epsilon angles
     """
 
     q = m1 / m2
 
+    if q < 1.:
+        raise(ValueError("mass-ratio < 1. m1 must be the larger black hole"))
+
     # the angles are functions of dimensionless orbital angular GW frequency
-    Momega = 2. * np.pi * phenom.HztoMf(flist.data, (m1 + m2) / lal.MSUN_SI)
+    Momega = 2. * np.pi * HztoMf(flist.data, (m1 + m2) / lal.MSUN_SI)
+
+    # divide by 2 to go from GW to orbital frequency
+    Momega_ref = 2. * np.pi * HztoMf(fref/2, (m1 + m2) / lal.MSUN_SI)
+
+    alpha_ref = PhenomPAlpha(Momega_ref, q, s1x, s1z)
+    epsilon_ref = PhenomPEpsilon(Momega_ref, q, s1x, s1z)
 
     alpha = lal.CreateREAL8Sequence(len(flist.data))
     epsilon = lal.CreateREAL8Sequence(len(flist.data))
     beta = lal.CreateREAL8Sequence(len(flist.data))
 
     for i, f in enumerate(Momega):
-        alpha.data[i] = phenom.PhenomPAlpha(f, q, s1x, s1z)
-        epsilon.data[i] = phenom.PhenomPEpsilon(f, q, s1x, s1z)
-        beta.data[i] = phenom.PhenomPBeta(f, q, s1x, s1z)
+        alpha.data[i] = PhenomPAlpha(f, q, s1x, s1z) - alpha_ref
+        epsilon.data[i] = PhenomPEpsilon(f, q, s1x, s1z) - epsilon_ref
+        beta.data[i] = PhenomPBeta(f, q, s1x, s1z)
 
     return alpha.data, beta.data, epsilon.data
 
