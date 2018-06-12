@@ -53,8 +53,8 @@ def evaluate_phenomPv3_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref,
     zeta_of_f = lal.CreateREAL8Sequence(len(flist.data))  # zeta or epsilon
     costhetaL_of_f = lal.CreateREAL8Sequence(len(flist.data))  # costhetaL or beta
 
-    costhetaL = 1
-    phiL = 1
+    costhetaL = 1.
+    phiL = 0.
 
     chi1, theta1, phi1 = convert_from_cartesian_to_polar(s1x, s1y, s1z)
     costheta1 = np.cos(theta1)
