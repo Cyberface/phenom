@@ -5,7 +5,7 @@ precession angles in a common API
 """
 
 import numpy as np
-from phenom import HztoMf, PhenomPAlpha, PhenomPEpsilon, PhenomPBeta
+from phenom import HztoMf, PhenomPAlpha, PhenomPEpsilon, PhenomPBeta, chip_fun
 
 try:
     import lal
@@ -58,7 +58,7 @@ def evaluate_phenomPv3_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref,
 
     chi1, theta1, phi1 = convert_from_cartesian_to_polar(s1x, s1y, s1z)
     costheta1 = np.cos(theta1)
-    chi2, theta2, phi2 = convert_from_cartesian_to_polar(s1x, s1y, s1z)
+    chi2, theta2, phi2 = convert_from_cartesian_to_polar(s2x, s2y, s2z)
     costheta2 = np.cos(theta2)
 
     if PN == "3":
@@ -95,17 +95,21 @@ def evaluate_phenomPv2_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref)
     # divide by 2 to go from GW to orbital frequency
     Momega_ref = 2. * np.pi * HztoMf(fref/2, (m1 + m2) / lal.MSUN_SI)
 
-    alpha_ref = PhenomPAlpha(Momega_ref, q, s1x, s1z)
-    epsilon_ref = PhenomPEpsilon(Momega_ref, q, s1x, s1z)
+    # compute chip and chieff
+    chip, chi1l, chi2l = chip_fun(m1/ lal.MSUN_SI, m2/ lal.MSUN_SI, s1x, s1y, s1z, s2x, s2y, s2z)
+    chieff = (m1*chi1l + m2*chi2l) / (m1 + m2)
+
+    alpha_ref = PhenomPAlpha(Momega_ref, q, chip, chieff)
+    epsilon_ref = PhenomPEpsilon(Momega_ref, q, chip, chieff)
 
     alpha = lal.CreateREAL8Sequence(len(flist.data))
     epsilon = lal.CreateREAL8Sequence(len(flist.data))
     beta = lal.CreateREAL8Sequence(len(flist.data))
 
     for i, f in enumerate(Momega):
-        alpha.data[i] = PhenomPAlpha(f, q, s1x, s1z) - alpha_ref
-        epsilon.data[i] = PhenomPEpsilon(f, q, s1x, s1z) - epsilon_ref
-        beta.data[i] = PhenomPBeta(f, q, s1x, s1z)
+        alpha.data[i] = PhenomPAlpha(f, q, chip, chieff) - alpha_ref
+        epsilon.data[i] = PhenomPEpsilon(f, q, chip, chieff) - epsilon_ref
+        beta.data[i] = PhenomPBeta(f, q, chip, chieff)
 
     return alpha.data, beta.data, epsilon.data
 
