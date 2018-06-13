@@ -5,7 +5,7 @@ precession angles in a common API
 """
 
 import numpy as np
-from phenom import HztoMf, PhenomPAlpha, PhenomPEpsilon, PhenomPBeta, chip_fun
+from phenom import HztoMf, PhenomPAlpha, PhenomPEpsilon, PhenomPBeta, chip_fun, chieffPH
 
 try:
     import lal
@@ -97,18 +97,20 @@ def evaluate_phenomPv2_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref)
 
     # compute chip and chieff
     chip, chi1l, chi2l = chip_fun(m1/ lal.MSUN_SI, m2/ lal.MSUN_SI, s1x, s1y, s1z, s2x, s2y, s2z)
-    chieff = (m1*chi1l + m2*chi2l) / (m1 + m2)
+    # chieff = (m1*chi1l + m2*chi2l) / (m1 + m2)
+    chieff = chieffPH(m1/ lal.MSUN_SI, m2/ lal.MSUN_SI, chi1l, chi2l)
+    print chi1l, chi2l, chieff
 
-    alpha_ref = PhenomPAlpha(Momega_ref, q, chip, chieff)
-    epsilon_ref = PhenomPEpsilon(Momega_ref, q, chip, chieff)
+    alpha_ref = PhenomPAlpha(Momega_ref, q, chip, chi1l)
+    epsilon_ref = PhenomPEpsilon(Momega_ref, q, chip, chi1l)
 
     alpha = lal.CreateREAL8Sequence(len(flist.data))
     epsilon = lal.CreateREAL8Sequence(len(flist.data))
     beta = lal.CreateREAL8Sequence(len(flist.data))
 
     for i, f in enumerate(Momega):
-        alpha.data[i] = PhenomPAlpha(f, q, chip, chieff) - alpha_ref
-        epsilon.data[i] = PhenomPEpsilon(f, q, chip, chieff) - epsilon_ref
+        alpha.data[i] = PhenomPAlpha(f, q, chip, chi1l) - alpha_ref
+        epsilon.data[i] = PhenomPEpsilon(f, q, chip, chi1l) - epsilon_ref
         beta.data[i] = PhenomPBeta(f, q, chip, chieff)
 
     return alpha.data, beta.data, epsilon.data
