@@ -75,12 +75,13 @@ def evaluate_phenomPv3_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref,
 
     return phiz_of_f.data, np.arccos(costhetaL_of_f.data), zeta_of_f.data
 
-def evaluate_phenomPv2_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref):
+def evaluate_phenomPv2_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref, order=-1):
     """
     flist = Real8Sequence of Orbital frequency
     input: m1, m2 in SI units
     spins are dimensionless
     fref : gw reference frequency
+    order : PN order for alpha and epsilon
     returns alpha, beta and epsilon angles
     """
 
@@ -99,17 +100,18 @@ def evaluate_phenomPv2_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref)
     chip, chi1l, chi2l = chip_fun(m1/ lal.MSUN_SI, m2/ lal.MSUN_SI, s1x, s1y, s1z, s2x, s2y, s2z)
     chieff = chieffPH(m1/ lal.MSUN_SI, m2/ lal.MSUN_SI, chi1l, chi2l)
 
-    alpha_ref = PhenomPAlpha(Momega_ref, q, chip, chi1l)
-    epsilon_ref = PhenomPEpsilon(Momega_ref, q, chip, chi1l)
+    alpha_ref = PhenomPAlpha(Momega_ref, q, chip, chi1l, order=order)
+    epsilon_ref = PhenomPEpsilon(Momega_ref, q, chip, chi1l, order=order)
 
     alpha = lal.CreateREAL8Sequence(len(flist.data))
     epsilon = lal.CreateREAL8Sequence(len(flist.data))
     beta = lal.CreateREAL8Sequence(len(flist.data))
 
     for i, f in enumerate(Momega):
-        alpha.data[i] = PhenomPAlpha(f, q, chip, chi1l) - alpha_ref
-        epsilon.data[i] = PhenomPEpsilon(f, q, chip, chi1l) - epsilon_ref
-        beta.data[i] = PhenomPBeta(f, q, chip, chieff)
+        alpha.data[i] = PhenomPAlpha(f, q, chip, chi1l, order=order) - alpha_ref
+        epsilon.data[i] = PhenomPEpsilon(f, q, chip, chi1l, order=order) - epsilon_ref
+        #beta.data[i] = PhenomPBeta(f, q, chip, chieff)
+        beta.data[i] = PhenomPBeta(f, q, chip, chi1l)
 
     return alpha.data, beta.data, epsilon.data
 
