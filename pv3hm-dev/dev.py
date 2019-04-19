@@ -20,6 +20,63 @@ def convert_from_cartesian_to_polar(x, y, z):
         azimuthal = np.arctan2(y, x)
     return mag, polar, azimuthal
 
+def same_as_init_PhenomPv3HM_Storage(
+    m1_SI,
+    m2_SI,
+    f_ref,
+    phiRef,
+    inclination,
+    chi1x,
+    chi1y,
+    chi1z,
+    chi2x,
+    chi2y,
+    chi2z
+):
+    assert m1_SI >= m2_SI, "m1 needs to be the primary"
+
+    #rotate from LAL to PhenomP frame
+    chi1_l, chi2_l, chip, thetaJN, alpha0, phi_aligned, zeta_polariz = \
+        lalsim.SimIMRPhenomPCalculateModelParametersFromSourceFrame(
+            m1_SI, m2_SI, f_ref, phiRef, inclination,
+            chi1x, chi1y, chi1z,
+            chi2x, chi2y, chi2z,
+            lalsim.IMRPhenomPv3_V)
+
+
+    # chi1, theta1, phi1 = convert_from_cartesian_to_polar(chi1x, chi1y, chi1z)
+    # costheta1 = np.cos(theta1)
+    # chi2, theta2, phi2 = convert_from_cartesian_to_polar(chi2x, chi2y, chi2z)
+    # costheta2 = np.cos(theta2)
+
+    # f_ref_Orb_Hz = 0.5 * f_ref
+
+    # orb_ref_freq = lal.CreateREAL8Sequence(1)
+    # orb_ref_freq.data[0] = f_ref_Orb_Hz
+
+    # ref_phiz_of_f = lal.CreateREAL8Sequence(1)  # phiz or alpha
+    # ref_zeta_of_f = lal.CreateREAL8Sequence(1)  # zeta or epsilon
+    # ref_costhetaL_of_f = lal.CreateREAL8Sequence(1)  # costhetaL or beta
+
+    # ExpansionOrder = 5
+    # costhetaL = 1.
+    # phiL = 0.
+
+    # lalsim.ComputeAngles3PN(ref_phiz_of_f, ref_zeta_of_f, ref_costhetaL_of_f,
+    #                         orb_ref_freq,
+    #                         m1_SI, m2_SI,
+    #                         costhetaL, phiL,
+    #                         costheta1, phi1, chi1,
+    #                         costheta2, phi2, chi2,
+    #                         f_ref, ExpansionOrder)
+    # alphaRef = ref_phiz_of_f.data[0]
+    # epsilonRef = ref_zeta_of_f.data[0]
+    # betaRef = np.arccos(ref_costhetaL_of_f.data[0])
+
+    # return alphaRef, epsilonRef, thetaJN, alpha0, phi_aligned, zeta_polariz
+    return 0,0, thetaJN, alpha0, phi_aligned, zeta_polariz
+
+
 def run_type_1():
 
     flow = 20.
@@ -43,6 +100,11 @@ def run_type_1():
     deltaF=df
     f_ref=f_ref
 
+    distance = 1e6 * lal.PC_SI
+    amp0 = lalsim.SimPhenomUtilsFDamp0((m1_SI + m2_SI) / lal.MSUN_SI, distance)
+    inclination = 0.
+
+
     params = lal.CreateDict()
     ma=lalsim.SimInspiralCreateModeArray()
     lalsim.SimInspiralModeArrayActivateMode(ma, 2, 2)
@@ -52,6 +114,21 @@ def run_type_1():
     # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 4)
     # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 3)
     lalsim.SimInspiralWaveformParamsInsertModeArray(params, ma)
+
+    alphaRef, epsilonRef, thetaJN, alpha0, phi_aligned, zeta_polariz = \
+        same_as_init_PhenomPv3HM_Storage(
+            m1_SI,
+            m2_SI,
+            f_ref,
+            phiRef,
+            inclination,
+            chi1x,
+            chi1y,
+            chi1z,
+            chi2x,
+            chi2y,
+            chi2z
+        )
 
     phm_params = dict(
         freqs=freqs,
@@ -75,10 +152,6 @@ def run_type_1():
     # f22 = np.arange( h22.data.length ) * h22.deltaF
 
     ModeArray = lalsim.SimInspiralWaveformParamsLookupModeArray(params)
-
-    distance = 1e6 * lal.PC_SI
-    amp0 = lalsim.SimPhenomUtilsFDamp0((m1_SI + m2_SI) / lal.MSUN_SI, distance)
-    INC = 0.
 
     Mtot_Msun = (m1_SI + m2_SI) / lal.MSUN_SI
     Msec = Mtot_Msun * lal.MTSUN_SI
@@ -139,7 +212,7 @@ def run_type_1():
                 print("-----> working mm = {}".format(mm))
 
                 # get Ylms
-                Y = lal.SpinWeightedSphericalHarmonic(INC, 0, -2, ell, mm)
+                Y = lal.SpinWeightedSphericalHarmonic(thetaJN, 0, -2, ell, mm)
                 # NOTE: we use phi=0 in Ylms so they are REAL numbers
                 # and the next line is pointless!
                 Yconj = np.conj(Y)
@@ -148,7 +221,7 @@ def run_type_1():
                 # for i, fHz in enumerate(flm_array):
                 for i, fHz in enumerate(freqs.data):
 
-                    alpha = phiz_of_f.data[i]
+                    alpha = phiz_of_f.data[i] - alpha0
                     epsilon = zeta_of_f.data[i]
                     beta = np.arccos(costhetaL_of_f.data[i])
 
@@ -174,6 +247,14 @@ def run_type_1():
                     hplus[i] += h1
                     hcross[i] += h2
 
+    cos2zeta = np.cos(2. * zeta_polariz)
+    sin2zeta = np.sin(2. * zeta_polariz)
+
+    for i in range(len(hplus)):
+        PhPpolp = hplus[i]
+        PhPpolc = hcross[i]
+        hplus[i] = PhPpolp * cos2zeta + PhPpolc * sin2zeta
+        hcross[i] = PhPpolc * cos2zeta - PhPpolp * sin2zeta
 
     return hplus, hcross, freqs.data
 
@@ -189,8 +270,8 @@ def run_type_2():
     f_ref = flow
 
     m1_SI=20. * lal.MSUN_SI
-    m2_SI=10. * lal.MSUN_SI
-    chi1x=1.
+    m2_SI=20. * lal.MSUN_SI
+    chi1x=0
     chi1y=0.
     chi1z=0.
     chi2x=0.
@@ -200,12 +281,17 @@ def run_type_2():
     deltaF=df
     f_ref=f_ref
 
+    distance = 1e6 * lal.PC_SI
+    amp0 = lalsim.SimPhenomUtilsFDamp0((m1_SI + m2_SI) / lal.MSUN_SI, distance)
+    inclination = np.pi/3.
+
+
     params = lal.CreateDict()
     ma=lalsim.SimInspiralCreateModeArray()
     lalsim.SimInspiralModeArrayActivateMode(ma, 2, 2)
     # lalsim.SimInspiralModeArrayActivateMode(ma, 2, 1)
     # lalsim.SimInspiralModeArrayActivateMode(ma, 3, 3)
-    # lalsim.SimInspiralModeArrayActivateMode(ma, 3, 2)
+    lalsim.SimInspiralModeArrayActivateMode(ma, 3, 2)
     # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 4)
     # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 3)
     lalsim.SimInspiralWaveformParamsInsertModeArray(params, ma)
@@ -226,6 +312,21 @@ def run_type_2():
         extraParams=params
     )
 
+    alphaRef, epsilonRef, thetaJN, alpha0, phi_aligned, zeta_polariz = \
+        same_as_init_PhenomPv3HM_Storage(
+            m1_SI,
+            m2_SI,
+            f_ref,
+            phiRef,
+            inclination,
+            chi1x,
+            chi1y,
+            chi1z,
+            chi2x,
+            chi2y,
+            chi2z
+        )
+
     hlms = lalsim.SimIMRPhenomHMGethlmModes(**phm_params)
 
     # h22 = lalsim.SphHarmFrequencySeriesGetMode(hlms, 2, 2)
@@ -233,9 +334,6 @@ def run_type_2():
 
     ModeArray = lalsim.SimInspiralWaveformParamsLookupModeArray(params)
 
-    distance = 1e6 * lal.PC_SI
-    amp0 = lalsim.SimPhenomUtilsFDamp0((m1_SI + m2_SI) / lal.MSUN_SI, distance)
-    INC = 0.
 
     Mtot_Msun = (m1_SI + m2_SI) / lal.MSUN_SI
     Msec = Mtot_Msun * lal.MTSUN_SI
@@ -291,7 +389,7 @@ def run_type_2():
                 print("-----> working mm = {}".format(mm))
 
                 # get Ylms
-                Y = lal.SpinWeightedSphericalHarmonic(INC, 0, -2, ell, mm)
+                Y = lal.SpinWeightedSphericalHarmonic(thetaJN, 0, -2, ell, mm)
                 # NOTE: we use phi=0 in Ylms so they are REAL numbers
                 # and the next line is pointless!
                 Yconj = np.conj(Y)
@@ -300,7 +398,7 @@ def run_type_2():
                 # for i, fHz in enumerate(flm_array):
                 for i, fHz in enumerate(freqs.data):
 
-                    alpha = phiz_of_f.data[i]
+                    alpha = phiz_of_f.data[i] - alpha0
                     epsilon = zeta_of_f.data[i]
                     beta = np.arccos(costhetaL_of_f.data[i])
 
@@ -318,40 +416,50 @@ def run_type_2():
                     Term1 = Y * WigD
                     Term2 = -1**(ell)  * Yconj * WigDmConj
 
-                    y = 0.5 * amp0 * hlm_np_i
+                    yy = 0.5 * amp0 * hlm_np_i
 
-                    h1 = y * (Term1 + Term2)
-                    h2 = -1.j * y * (Term1 - Term2)
+                    h1 = yy * (Term1 + Term2)
+                    h2 = -1.j * yy * (Term1 - Term2)
 
                     hplus[i] += h1
                     hcross[i] += h2
+
+    cos2zeta = np.cos(2. * zeta_polariz)
+    sin2zeta = np.sin(2. * zeta_polariz)
+
+    for i in range(len(hplus)):
+        PhPpolp = hplus[i]
+        PhPpolc = hcross[i]
+        hplus[i] = PhPpolp * cos2zeta + PhPpolc * sin2zeta
+        hcross[i] = PhPpolc * cos2zeta - PhPpolp * sin2zeta
 
     return hplus, hcross, freqs.data
 
 
 
 
-hp1, hc1, f1 = run_type_1()
+# hp1, hc1, f1 = run_type_1()
 hp2, hc2, f2 = run_type_2()
 
+inclination=np.pi/3.
 
 params = lal.CreateDict()
 ma=lalsim.SimInspiralCreateModeArray()
 lalsim.SimInspiralModeArrayActivateMode(ma, 2, 2)
 # lalsim.SimInspiralModeArrayActivateMode(ma, 2, 1)
 # lalsim.SimInspiralModeArrayActivateMode(ma, 3, 3)
-# lalsim.SimInspiralModeArrayActivateMode(ma, 3, 2)
+lalsim.SimInspiralModeArrayActivateMode(ma, 3, 2)
 # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 4)
 # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 3)
 lalsim.SimInspiralWaveformParamsInsertModeArray(params, ma)
 
 hplal,hclal=lalsim.SimInspiralChooseFDWaveform(
     20*lal.MSUN_SI,
-    10*lal.MSUN_SI,
-    1.,0,0,
+    20*lal.MSUN_SI,
+    0.,0,0,
     0,0,0,
     1e6*lal.PC_SI,
-    0,
+    inclination,
     0,
     0,
     0,
@@ -366,11 +474,46 @@ hplal,hclal=lalsim.SimInspiralChooseFDWaveform(
 
 f_lal = np.arange(hplal.data.length) * hplal.deltaF
 
+
+hplal_HM,hclal_HM=lalsim.SimInspiralChooseFDWaveform(
+    20*lal.MSUN_SI,
+    20*lal.MSUN_SI,
+    0.,0,0,
+    0,0,0,
+    1e6*lal.PC_SI,
+    inclination,
+    0,
+    0,
+    0,
+    0,
+    0.1,
+    20,
+    1024.*1.6,
+    20.,
+    params,
+    lalsim.IMRPhenomHM
+)
+
+f_lal_HM = np.arange(hplal_HM.data.length) * hplal_HM.deltaF
+
+
+
+
 plt.figure()
-plt.plot(f1, np.abs(hp1), label='1')
-plt.plot(f2, np.abs(hp2), ls='--', label='2')
-plt.plot(f_lal, np.abs(hplal.data.data), ls='--', label='lal')
+# plt.plot(f1, np.abs(hp1), label='1')
+plt.plot(f2, np.abs(hp2), ls='--', label='2p')
+plt.plot(f2, np.abs(hc2), ls='--', label='2x')
+plt.plot(f_lal, np.abs(hplal.data.data), label='lal')
+plt.plot(f_lal_HM, np.abs(hplal_HM.data.data), ls='--', label='lal_HM')
 plt.xscale('log')
 plt.yscale('log')
 plt.legend()
 plt.show()
+
+# plt.figure()
+# plt.plot(f2, np.abs(hc2), ls='--', label='2')
+# plt.plot(f_lal, np.abs(hclal.data.data), ls='--', label='lal')
+# plt.xscale('log')
+# plt.yscale('log')
+# plt.legend()
+# plt.show()
