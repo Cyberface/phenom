@@ -1,0 +1,376 @@
+import matplotlib
+import matplotlib.pyplot as plt
+
+import lal
+import lalsimulation as lalsim
+import numpy as np
+
+
+def convert_from_cartesian_to_polar(x, y, z):
+    """
+    function to convert from 3d cartesian components to polar angles and vector magnitude.
+    https://en.wikipedia.org/wiki/Spherical_coordinate_system#Cartesian_coordinates
+    """
+    mag = np.sqrt(x * x + y * y + z * z)
+    if (np.abs(mag - 0.) < 1e-9):
+        polar = 0.
+        azimuthal = 0.
+    else:
+        polar = np.arccos(z / mag)
+        azimuthal = np.arctan2(y, x)
+    return mag, polar, azimuthal
+
+def run_type_1():
+
+    flow = 20.
+    fhigh = 1024.*1.6
+    df = 0.1
+    x = np.arange(flow, fhigh, df)
+    freqs = lal.CreateREAL8Sequence(len(x))
+    freqs.data = x
+
+    f_ref = flow
+
+    m1_SI=20. * lal.MSUN_SI
+    m2_SI=1. * lal.MSUN_SI
+    chi1x=1.
+    chi1y=0.
+    chi1z=0.
+    chi2x=0.
+    chi2y=0.
+    chi2z=0.
+    phiRef=0.
+    deltaF=df
+    f_ref=f_ref
+
+    params = lal.CreateDict()
+    ma=lalsim.SimInspiralCreateModeArray()
+    lalsim.SimInspiralModeArrayActivateMode(ma, 2, 2)
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 2, 1)
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 3, 3)
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 3, 2)
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 4)
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 3)
+    lalsim.SimInspiralWaveformParamsInsertModeArray(params, ma)
+
+    phm_params = dict(
+        freqs=freqs,
+        m1_SI=m1_SI,
+        m2_SI=m2_SI,
+        chi1x=chi1x,
+        chi1y=chi1y,
+        chi1z=chi1z,
+        chi2x=chi2x,
+        chi2y=chi2y,
+        chi2z=chi2z,
+        phiRef=phiRef,
+        deltaF=deltaF,
+        f_ref=f_ref,
+        extraParams=params
+    )
+
+    hlms = lalsim.SimIMRPhenomHMGethlmModes(**phm_params)
+
+    # h22 = lalsim.SphHarmFrequencySeriesGetMode(hlms, 2, 2)
+    # f22 = np.arange( h22.data.length ) * h22.deltaF
+
+    ModeArray = lalsim.SimInspiralWaveformParamsLookupModeArray(params)
+
+    distance = 1e6 * lal.PC_SI
+    amp0 = lalsim.SimPhenomUtilsFDamp0((m1_SI + m2_SI) / lal.MSUN_SI, distance)
+    INC = 0.
+
+    Mtot_Msun = (m1_SI + m2_SI) / lal.MSUN_SI
+    Msec = Mtot_Msun * lal.MTSUN_SI
+    twopi_Msec = lal.TWOPI * Msec
+
+    # compute precession angles over all frequencies
+    # only need to do this once.
+
+    phiz_of_f = lal.CreateREAL8Sequence(len(freqs.data))  # phiz or alpha
+    zeta_of_f = lal.CreateREAL8Sequence(len(freqs.data))  # zeta or epsilon
+    costhetaL_of_f = lal.CreateREAL8Sequence(len(freqs.data))  # costhetaL or beta
+
+    ExpansionOrder = 5
+    costhetaL = 1.
+    phiL = 0.
+
+    chi1, theta1, phi1 = convert_from_cartesian_to_polar(chi1x, chi1y, chi1z)
+    costheta1 = np.cos(theta1)
+    chi2, theta2, phi2 = convert_from_cartesian_to_polar(chi2x, chi2y, chi2z)
+    costheta2 = np.cos(theta2)
+
+
+    ###
+    # NOTE: lalsim.ComputeAngles3PN need the ORBITAL frequency
+    # so we divide by 2.
+    ###
+    orb_freqs = lal.CreateREAL8Sequence(len(freqs.data))
+    orb_freqs.data = freqs.data / 2
+
+    lalsim.ComputeAngles3PN(phiz_of_f, zeta_of_f, costhetaL_of_f,
+                            orb_freqs,
+                            m1_SI, m2_SI,
+                            costhetaL, phiL,
+                            costheta1, phi1, chi1,
+                            costheta2, phi2, chi2,
+                            f_ref, ExpansionOrder)
+
+    hplus = np.zeros(len(freqs.data), dtype=np.complex64)
+    hcross = np.zeros(len(freqs.data), dtype=np.complex64)
+
+    for ell in range(2,5):
+        # loop over ell = [2,3,4]
+        for mprime in range(ell+1):
+            # mprime is the index for the modes in the non-precessing model
+            ms = lalsim.SimInspiralModeArrayIsModeActive(ModeArray, ell, mprime)
+            if ms != 1:
+                continue
+            print("ell = {}, mprime = {}".format(ell, mprime))
+            print("mode state = {}".format(ms))
+            # get non-precessing mode
+            hlm_np = lalsim.SphHarmFrequencySeriesGetMode(hlms, ell, mprime)
+            # flm_array = np.arange( hlm_np.data.length ) * hlm_np.deltaF
+
+            # now we loop over all m-modes in the current ell-mode
+            # and "do the twist"
+
+            for mm in range(-ell, ell+1):
+                print("-----> working mm = {}".format(mm))
+
+                # get Ylms
+                Y = lal.SpinWeightedSphericalHarmonic(INC, 0, -2, ell, mm)
+                # NOTE: we use phi=0 in Ylms so they are REAL numbers
+                # and the next line is pointless!
+                Yconj = np.conj(Y)
+
+                # loop over frequencies
+                # for i, fHz in enumerate(flm_array):
+                for i, fHz in enumerate(freqs.data):
+
+                    alpha = phiz_of_f.data[i]
+                    epsilon = zeta_of_f.data[i]
+                    beta = np.arccos(costhetaL_of_f.data[i])
+
+                    w1 = np.exp(1.j * mm * alpha)
+                    w2 = lal.WignerdMatrix(ell, mprime, mm, -beta)
+                    w3 = np.exp(-mprime * 1.j * epsilon)
+                    WigD = w1 * w2 * w3
+
+                    w2m = lal.WignerdMatrix(ell, -mprime, mm, -beta)
+                    w4 = np.exp(-mprime * -1.j * epsilon)
+                    WigDmConj = np.conj(w1 * w2m * w4)
+
+                    hlm_np_i = hlm_np.data.data[i]
+
+                    Term1 = Y * WigD
+                    Term2 = -1**(ell)  * Yconj * WigDmConj
+
+                    y = 0.5 * amp0 * hlm_np_i
+
+                    h1 = y * (Term1 + Term2)
+                    h2 = -1.j * y * (Term1 - Term2)
+
+                    hplus[i] += h1
+                    hcross[i] += h2
+
+
+    return hplus, hcross, freqs.data
+
+def run_type_2():
+
+    flow = 20.
+    fhigh = 1024.*1.6
+    df = 0.1
+    x = np.arange(flow, fhigh, df)
+    freqs = lal.CreateREAL8Sequence(len(x))
+    freqs.data = x
+
+    f_ref = flow
+
+    m1_SI=20. * lal.MSUN_SI
+    m2_SI=10. * lal.MSUN_SI
+    chi1x=1.
+    chi1y=0.
+    chi1z=0.
+    chi2x=0.
+    chi2y=0.
+    chi2z=0.
+    phiRef=0.
+    deltaF=df
+    f_ref=f_ref
+
+    params = lal.CreateDict()
+    ma=lalsim.SimInspiralCreateModeArray()
+    lalsim.SimInspiralModeArrayActivateMode(ma, 2, 2)
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 2, 1)
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 3, 3)
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 3, 2)
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 4)
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 3)
+    lalsim.SimInspiralWaveformParamsInsertModeArray(params, ma)
+
+    phm_params = dict(
+        freqs=freqs,
+        m1_SI=m1_SI,
+        m2_SI=m2_SI,
+        chi1x=chi1x,
+        chi1y=chi1y,
+        chi1z=chi1z,
+        chi2x=chi2x,
+        chi2y=chi2y,
+        chi2z=chi2z,
+        phiRef=phiRef,
+        deltaF=deltaF,
+        f_ref=f_ref,
+        extraParams=params
+    )
+
+    hlms = lalsim.SimIMRPhenomHMGethlmModes(**phm_params)
+
+    # h22 = lalsim.SphHarmFrequencySeriesGetMode(hlms, 2, 2)
+    # f22 = np.arange( h22.data.length ) * h22.deltaF
+
+    ModeArray = lalsim.SimInspiralWaveformParamsLookupModeArray(params)
+
+    distance = 1e6 * lal.PC_SI
+    amp0 = lalsim.SimPhenomUtilsFDamp0((m1_SI + m2_SI) / lal.MSUN_SI, distance)
+    INC = 0.
+
+    Mtot_Msun = (m1_SI + m2_SI) / lal.MSUN_SI
+    Msec = Mtot_Msun * lal.MTSUN_SI
+    twopi_Msec = lal.TWOPI * Msec
+
+    # compute precession angles over all frequencies
+    # only need to do this once.
+
+    phiz_of_f = lal.CreateREAL8Sequence(len(freqs.data))  # phiz or alpha
+    zeta_of_f = lal.CreateREAL8Sequence(len(freqs.data))  # zeta or epsilon
+    costhetaL_of_f = lal.CreateREAL8Sequence(len(freqs.data))  # costhetaL or beta
+
+    ExpansionOrder = 5
+    costhetaL = 1.
+    phiL = 0.
+
+    chi1, theta1, phi1 = convert_from_cartesian_to_polar(chi1x, chi1y, chi1z)
+    costheta1 = np.cos(theta1)
+    chi2, theta2, phi2 = convert_from_cartesian_to_polar(chi2x, chi2y, chi2z)
+    costheta2 = np.cos(theta2)
+
+    hplus = np.zeros(len(freqs.data), dtype=np.complex64)
+    hcross = np.zeros(len(freqs.data), dtype=np.complex64)
+
+    for ell in range(2,5):
+        # loop over ell = [2,3,4]
+        for mprime in range(ell+1):
+            # mprime is the index for the modes in the non-precessing model
+            ms = lalsim.SimInspiralModeArrayIsModeActive(ModeArray, ell, mprime)
+            if ms != 1:
+                continue
+            print("ell = {}, mprime = {}".format(ell, mprime))
+            print("mode state = {}".format(ms))
+            # get non-precessing mode
+            hlm_np = lalsim.SphHarmFrequencySeriesGetMode(hlms, ell, mprime)
+            # flm_array = np.arange( hlm_np.data.length ) * hlm_np.deltaF
+
+            # now we loop over all m-modes in the current ell-mode
+            # and "do the twist"
+
+            orb_freqs = lal.CreateREAL8Sequence(len(freqs.data))
+            orb_freqs.data = freqs.data / mprime
+
+            lalsim.ComputeAngles3PN(phiz_of_f, zeta_of_f, costhetaL_of_f,
+                                    orb_freqs,
+                                    m1_SI, m2_SI,
+                                    costhetaL, phiL,
+                                    costheta1, phi1, chi1,
+                                    costheta2, phi2, chi2,
+                                    f_ref, ExpansionOrder)
+
+            for mm in range(-ell, ell+1):
+                print("-----> working mm = {}".format(mm))
+
+                # get Ylms
+                Y = lal.SpinWeightedSphericalHarmonic(INC, 0, -2, ell, mm)
+                # NOTE: we use phi=0 in Ylms so they are REAL numbers
+                # and the next line is pointless!
+                Yconj = np.conj(Y)
+
+                # loop over frequencies
+                # for i, fHz in enumerate(flm_array):
+                for i, fHz in enumerate(freqs.data):
+
+                    alpha = phiz_of_f.data[i]
+                    epsilon = zeta_of_f.data[i]
+                    beta = np.arccos(costhetaL_of_f.data[i])
+
+                    w1 = np.exp(1.j * mm * alpha)
+                    w2 = lal.WignerdMatrix(ell, mprime, mm, -beta)
+                    w3 = np.exp(-mprime * 1.j * epsilon)
+                    WigD = w1 * w2 * w3
+
+                    w2m = lal.WignerdMatrix(ell, -mprime, mm, -beta)
+                    w4 = np.exp(-mprime * -1.j * epsilon)
+                    WigDmConj = np.conj(w1 * w2m * w4)
+
+                    hlm_np_i = hlm_np.data.data[i]
+
+                    Term1 = Y * WigD
+                    Term2 = -1**(ell)  * Yconj * WigDmConj
+
+                    y = 0.5 * amp0 * hlm_np_i
+
+                    h1 = y * (Term1 + Term2)
+                    h2 = -1.j * y * (Term1 - Term2)
+
+                    hplus[i] += h1
+                    hcross[i] += h2
+
+    return hplus, hcross, freqs.data
+
+
+
+
+hp1, hc1, f1 = run_type_1()
+hp2, hc2, f2 = run_type_2()
+
+
+params = lal.CreateDict()
+ma=lalsim.SimInspiralCreateModeArray()
+lalsim.SimInspiralModeArrayActivateMode(ma, 2, 2)
+# lalsim.SimInspiralModeArrayActivateMode(ma, 2, 1)
+# lalsim.SimInspiralModeArrayActivateMode(ma, 3, 3)
+# lalsim.SimInspiralModeArrayActivateMode(ma, 3, 2)
+# lalsim.SimInspiralModeArrayActivateMode(ma, 4, 4)
+# lalsim.SimInspiralModeArrayActivateMode(ma, 4, 3)
+lalsim.SimInspiralWaveformParamsInsertModeArray(params, ma)
+
+hplal,hclal=lalsim.SimInspiralChooseFDWaveform(
+    20*lal.MSUN_SI,
+    10*lal.MSUN_SI,
+    1.,0,0,
+    0,0,0,
+    1e6*lal.PC_SI,
+    0,
+    0,
+    0,
+    0,
+    0,
+    0.1,
+    20,
+    1024.*1.6,
+    20.,
+    params,
+    lalsim.IMRPhenomPv3HM
+)
+
+f_lal = np.arange(hplal.data.length) * hplal.deltaF
+
+plt.figure()
+plt.plot(f1, np.abs(hp1), label='1')
+plt.plot(f2, np.abs(hp2), ls='--', label='2')
+plt.plot(f_lal, np.abs(hplal.data.data), ls='--', label='lal')
+plt.xscale('log')
+plt.yscale('log')
+plt.legend()
+plt.show()
