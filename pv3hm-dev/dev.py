@@ -608,7 +608,7 @@ for l,m in modes:
 
 lalsim.SimInspiralWaveformParamsInsertModeArray(params, ma)
 
-# PhenomHM
+# PhenomPv3HM
 hplal,hclal=lalsim.SimInspiralChooseFDWaveform(
     default_pars['m1']*lal.MSUN_SI,
     default_pars['m2']*lal.MSUN_SI,
