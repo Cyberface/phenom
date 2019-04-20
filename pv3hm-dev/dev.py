@@ -587,10 +587,10 @@ def run_type_3_pv3(m1,m2,chi1x,chi1y,chi1z,chi2x,chi2y,chi2z,phiref,f_ref,df,flo
 
 # modes=[(2,2),(3,2)]
 modes=[(2,2)]
-# modes=[(2,2),(2,1),(3,3)]
+modes=[(2,2),(2,1),(3,3),(3,2),(4,4),(4,3)]
 
 default_pars = dict(
-    m1=20,m2=10,chi1x=0.,chi1y=0,chi1z=0,chi2x=0,chi2y=0,chi2z=0,phiref=0,
+    m1=20,m2=10,chi1x=0.2,chi1y=0,chi1z=0,chi2x=0,chi2y=0,chi2z=0,phiref=0,
     f_ref=20,df=0.1,flow=20,fhigh=1024*1.6,inclination=np.pi/3.,
     distance=1e6*lal.PC_SI, modes=modes)
 
@@ -677,41 +677,22 @@ f_lal_D = np.arange(hplal_D.data.length) * hplal_D.deltaF
 fig, axes = plt.subplots(2, 1, figsize=(12, 8))
 
 # axes[0].plot(f1, np.abs(hp1), label='1')
-axes[0].plot(f2, np.abs(hp2), ls='--', label='my_plus (pv3hm)')
+axes[0].plot(f2, np.abs(hp2), ls='-', label='my_plus (pv3hm)', lw=2)
 axes[0].plot(f3, np.abs(hp3), label='my_plus (pv3)')
 axes[0].plot(f_lal, np.abs(hplal.data.data), ls='--', label='pv3hm_lal_plus')
-# axes[0].plot(f_lal_HM, np.abs(hplal_HM.data.data), ls='--', label='HM_lal_plus')
+axes[0].plot(f_lal_HM, np.abs(hplal_HM.data.data), ls='--', label='HM_lal_plus')
 # axes[0].plot(f_lal_D, np.abs(hplal_D.data.data), ls='--', label='D_lal_plus')
 axes[0].set_xscale('log')
 axes[0].set_yscale('log')
 axes[0].legend()
 
-axes[1].plot(f2, np.abs(hc2), ls='--', label='my_cross (pv3hm)')
+axes[1].plot(f2, np.abs(hc2), ls='-', label='my_cross (pv3hm)', lw=2)
 axes[1].plot(f3, np.abs(hc3), label='my_cross (pv3)')
 axes[1].plot(f_lal, np.abs(hclal.data.data), ls='--', label='pv3hm_lal_cross')
-# axes[1].plot(f_lal_HM, np.abs(hclal_HM.data.data), ls='--', label='HM_lal_cross')
+axes[1].plot(f_lal_HM, np.abs(hclal_HM.data.data), ls='--', label='HM_lal_cross')
 # axes[1].plot(f_lal_D, np.abs(hclal_D.data.data), ls='--', label='D_lal_cross')
 axes[1].set_xscale('log')
 axes[1].set_yscale('log')
 axes[1].legend()
 
 plt.show()
-
-# plt.figure()
-# plt.plot(f1, np.abs(hp1), label='1')
-# plt.plot(f2, np.abs(hp2), ls='--', label='2p')
-# plt.plot(f2, np.abs(hc2), ls='--', label='2x')
-# plt.plot(f_lal, np.abs(hplal.data.data), label='lal')
-# plt.plot(f_lal_HM, np.abs(hplal_HM.data.data), ls='--', label='lal_HM')
-# plt.xscale('log')
-# plt.yscale('log')
-# plt.legend()
-# plt.show()
-
-# plt.figure()
-# plt.plot(f2, np.abs(hc2), ls='--', label='2')
-# plt.plot(f_lal, np.abs(hclal.data.data), ls='--', label='lal')
-# plt.xscale('log')
-# plt.yscale('log')
-# plt.legend()
-# plt.show()
