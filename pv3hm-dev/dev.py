@@ -77,37 +77,28 @@ def same_as_init_PhenomPv3HM_Storage(
     return 0,0, thetaJN, alpha0, phi_aligned, zeta_polariz
 
 
-def run_type_1():
+def run_type_1(m1,m2,chi1x,chi1y,chi1z,chi2x,chi2y,chi2z,phiref,f_ref,df,flow,fhigh,inclination,distance, modes):
 
-    flow = 20.
-    fhigh = 1024.*1.6
-    df = 0.1
     x = np.arange(flow, fhigh, df)
     freqs = lal.CreateREAL8Sequence(len(x))
     freqs.data = x
 
     f_ref = flow
 
-    m1_SI=20. * lal.MSUN_SI
-    m2_SI=1. * lal.MSUN_SI
-    chi1x=1.
-    chi1y=0.
-    chi1z=0.
-    chi2x=0.
-    chi2y=0.
-    chi2z=0.
-    phiRef=0.
+    m1_SI=m1 * lal.MSUN_SI
+    m2_SI=m2 * lal.MSUN_SI
     deltaF=df
-    f_ref=f_ref
 
-    distance = 1e6 * lal.PC_SI
     amp0 = lalsim.SimPhenomUtilsFDamp0((m1_SI + m2_SI) / lal.MSUN_SI, distance)
-    inclination = 0.
 
 
     params = lal.CreateDict()
     ma=lalsim.SimInspiralCreateModeArray()
-    lalsim.SimInspiralModeArrayActivateMode(ma, 2, 2)
+
+    for l,m in modes:
+        lalsim.SimInspiralModeArrayActivateMode(ma, l, m)
+
+    # lalsim.SimInspiralModeArrayActivateMode(ma, 2, 2)
     # lalsim.SimInspiralModeArrayActivateMode(ma, 2, 1)
     # lalsim.SimInspiralModeArrayActivateMode(ma, 3, 3)
     # lalsim.SimInspiralModeArrayActivateMode(ma, 3, 2)
@@ -115,20 +106,6 @@ def run_type_1():
     # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 3)
     lalsim.SimInspiralWaveformParamsInsertModeArray(params, ma)
 
-    alphaRef, epsilonRef, thetaJN, alpha0, phi_aligned, zeta_polariz = \
-        same_as_init_PhenomPv3HM_Storage(
-            m1_SI,
-            m2_SI,
-            f_ref,
-            phiRef,
-            inclination,
-            chi1x,
-            chi1y,
-            chi1z,
-            chi2x,
-            chi2y,
-            chi2z
-        )
 
     phm_params = dict(
         freqs=freqs,
@@ -140,11 +117,26 @@ def run_type_1():
         chi2x=chi2x,
         chi2y=chi2y,
         chi2z=chi2z,
-        phiRef=phiRef,
+        phiRef=phiref,
         deltaF=deltaF,
         f_ref=f_ref,
         extraParams=params
     )
+
+    alphaRef, epsilonRef, thetaJN, alpha0, phi_aligned, zeta_polariz = \
+        same_as_init_PhenomPv3HM_Storage(
+            m1_SI,
+            m2_SI,
+            f_ref,
+            phiref,
+            inclination,
+            chi1x,
+            chi1y,
+            chi1z,
+            chi2x,
+            chi2y,
+            chi2z
+        )
 
     hlms = lalsim.SimIMRPhenomHMGethlmModes(**phm_params)
 
@@ -258,42 +250,29 @@ def run_type_1():
 
     return hplus, hcross, freqs.data
 
-def run_type_2():
 
-    flow = 20.
-    fhigh = 1024.*1.6
-    df = 0.1
+
+def run_type_2(m1,m2,chi1x,chi1y,chi1z,chi2x,chi2y,chi2z,phiref,f_ref,df,flow,fhigh,inclination,distance, modes):
+
     x = np.arange(flow, fhigh, df)
     freqs = lal.CreateREAL8Sequence(len(x))
     freqs.data = x
 
     f_ref = flow
 
-    m1_SI=20. * lal.MSUN_SI
-    m2_SI=20. * lal.MSUN_SI
-    chi1x=0
-    chi1y=0.
-    chi1z=0.
-    chi2x=0.
-    chi2y=0.
-    chi2z=0.
-    phiRef=0.
+    m1_SI=m1 * lal.MSUN_SI
+    m2_SI=m2 * lal.MSUN_SI
     deltaF=df
-    f_ref=f_ref
 
-    distance = 1e6 * lal.PC_SI
     amp0 = lalsim.SimPhenomUtilsFDamp0((m1_SI + m2_SI) / lal.MSUN_SI, distance)
-    inclination = np.pi/3.
 
 
     params = lal.CreateDict()
     ma=lalsim.SimInspiralCreateModeArray()
-    lalsim.SimInspiralModeArrayActivateMode(ma, 2, 2)
-    # lalsim.SimInspiralModeArrayActivateMode(ma, 2, 1)
-    # lalsim.SimInspiralModeArrayActivateMode(ma, 3, 3)
-    lalsim.SimInspiralModeArrayActivateMode(ma, 3, 2)
-    # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 4)
-    # lalsim.SimInspiralModeArrayActivateMode(ma, 4, 3)
+
+    for l,m in modes:
+        lalsim.SimInspiralModeArrayActivateMode(ma, l, m)
+
     lalsim.SimInspiralWaveformParamsInsertModeArray(params, ma)
 
     phm_params = dict(
@@ -306,7 +285,7 @@ def run_type_2():
         chi2x=chi2x,
         chi2y=chi2y,
         chi2z=chi2z,
-        phiRef=phiRef,
+        phiRef=phiref,
         deltaF=deltaF,
         f_ref=f_ref,
         extraParams=params
@@ -317,7 +296,7 @@ def run_type_2():
             m1_SI,
             m2_SI,
             f_ref,
-            phiRef,
+            phiref,
             inclination,
             chi1x,
             chi1y,
@@ -436,38 +415,40 @@ def run_type_2():
     return hplus, hcross, freqs.data
 
 
+modes=[(2,2),(3,2)]
 
+default_pars = dict(
+    m1=20,m2=10,chi1x=0,chi1y=0,chi1z=0,chi2x=0,chi2y=0,chi2z=0,phiref=0,
+    f_ref=20,df=0.1,flow=20,fhigh=1024*1.6,inclination=np.pi/3.,
+    distance=1e6*lal.PC_SI, modes=modes)
 
-# hp1, hc1, f1 = run_type_1()
-hp2, hc2, f2 = run_type_2()
+# hp1, hc1, f1 = run_type_1(**default_pars)
+hp2, hc2, f2 = run_type_2(**default_pars)
 
-inclination=np.pi/3.
 
 params = lal.CreateDict()
 ma=lalsim.SimInspiralCreateModeArray()
-lalsim.SimInspiralModeArrayActivateMode(ma, 2, 2)
-# lalsim.SimInspiralModeArrayActivateMode(ma, 2, 1)
-# lalsim.SimInspiralModeArrayActivateMode(ma, 3, 3)
-lalsim.SimInspiralModeArrayActivateMode(ma, 3, 2)
-# lalsim.SimInspiralModeArrayActivateMode(ma, 4, 4)
-# lalsim.SimInspiralModeArrayActivateMode(ma, 4, 3)
+
+for l,m in modes:
+    lalsim.SimInspiralModeArrayActivateMode(ma, l, m)
+
 lalsim.SimInspiralWaveformParamsInsertModeArray(params, ma)
 
 hplal,hclal=lalsim.SimInspiralChooseFDWaveform(
-    20*lal.MSUN_SI,
-    20*lal.MSUN_SI,
-    0.,0,0,
-    0,0,0,
-    1e6*lal.PC_SI,
-    inclination,
+    default_pars['m1']*lal.MSUN_SI,
+    default_pars['m2']*lal.MSUN_SI,
+    default_pars['chi1x'],default_pars['chi1y'],default_pars['chi1z'],
+    default_pars['chi2x'],default_pars['chi2y'],default_pars['chi2z'],
+    default_pars['distance'],
+    default_pars['inclination'],
+    default_pars['phiref'],
     0,
     0,
     0,
-    0,
-    0.1,
-    20,
-    1024.*1.6,
-    20.,
+    default_pars['df'],
+    default_pars['flow'],
+    default_pars['fhigh'],
+    default_pars['f_ref'],
     params,
     lalsim.IMRPhenomPv3HM
 )
@@ -476,20 +457,20 @@ f_lal = np.arange(hplal.data.length) * hplal.deltaF
 
 
 hplal_HM,hclal_HM=lalsim.SimInspiralChooseFDWaveform(
-    20*lal.MSUN_SI,
-    20*lal.MSUN_SI,
-    0.,0,0,
-    0,0,0,
-    1e6*lal.PC_SI,
-    inclination,
+    default_pars['m1']*lal.MSUN_SI,
+    default_pars['m2']*lal.MSUN_SI,
+    0,0,default_pars['chi1z'],
+    0,0,default_pars['chi2z'],
+    default_pars['distance'],
+    default_pars['inclination'],
+    default_pars['phiref'],
     0,
     0,
     0,
-    0,
-    0.1,
-    20,
-    1024.*1.6,
-    20.,
+    default_pars['df'],
+    default_pars['flow'],
+    default_pars['fhigh'],
+    default_pars['f_ref'],
     params,
     lalsim.IMRPhenomHM
 )
@@ -497,18 +478,35 @@ hplal_HM,hclal_HM=lalsim.SimInspiralChooseFDWaveform(
 f_lal_HM = np.arange(hplal_HM.data.length) * hplal_HM.deltaF
 
 
+fig, axes = plt.subplots(2, 1, figsize=(12, 8))
 
+# axes[0].plot(f1, np.abs(hp1), label='1')
+axes[0].plot(f2, np.abs(hp2), ls='--', label='my_plus')
+axes[0].plot(f_lal, np.abs(hplal.data.data), label='pv3hm_lal_plus')
+axes[0].plot(f_lal_HM, np.abs(hplal_HM.data.data), ls='--', label='HM_lal_plus')
+axes[0].set_xscale('log')
+axes[0].set_yscale('log')
+axes[0].legend()
 
-plt.figure()
-# plt.plot(f1, np.abs(hp1), label='1')
-plt.plot(f2, np.abs(hp2), ls='--', label='2p')
-plt.plot(f2, np.abs(hc2), ls='--', label='2x')
-plt.plot(f_lal, np.abs(hplal.data.data), label='lal')
-plt.plot(f_lal_HM, np.abs(hplal_HM.data.data), ls='--', label='lal_HM')
-plt.xscale('log')
-plt.yscale('log')
-plt.legend()
+axes[1].plot(f2, np.abs(hc2), ls='--', label='my_cross')
+axes[1].plot(f_lal, np.abs(hclal.data.data), label='pv3hm_lal_cross')
+axes[1].plot(f_lal_HM, np.abs(hclal_HM.data.data), ls='--', label='HM_lal_cross')
+axes[1].set_xscale('log')
+axes[1].set_yscale('log')
+axes[1].legend()
+
 plt.show()
+
+# plt.figure()
+# plt.plot(f1, np.abs(hp1), label='1')
+# plt.plot(f2, np.abs(hp2), ls='--', label='2p')
+# plt.plot(f2, np.abs(hc2), ls='--', label='2x')
+# plt.plot(f_lal, np.abs(hplal.data.data), label='lal')
+# plt.plot(f_lal_HM, np.abs(hplal_HM.data.data), ls='--', label='lal_HM')
+# plt.xscale('log')
+# plt.yscale('log')
+# plt.legend()
+# plt.show()
 
 # plt.figure()
 # plt.plot(f2, np.abs(hc2), ls='--', label='2')
