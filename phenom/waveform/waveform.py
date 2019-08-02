@@ -1,5 +1,5 @@
 from phenom.utils.utils import M_eta_m1_m2, chipn, Constants
-from numpy import cos
+from numpy import cos, zeros 
 
 class Waveform(object):
     """docstring for Waveform
@@ -33,7 +33,7 @@ class Waveform(object):
                     'delta_f':1./2.,
                     'delta_t':1./2.}
 
-    available_approximants = ['IMRPhenomD', 'IMRPhenomPv2_LAL']
+    available_approximants = ['IMRPhenomD', 'IMRPhenomPv2_LAL', 'IMRPhenomD_mod']
 
     def __init__(self,
         approximant=default_args['approximant'],
@@ -160,6 +160,20 @@ class Waveform(object):
             self.flist_Hz = ph.flist_Hz
             self.hptilde = ph.hp
             self.hctilde = ph.hc
+
+        elif input_params['approximant'] == 'IMRPhenomD_mod':
+            from phenom.waveform import PhenomD_mod
+            ph = PhenomD_mod(m1=input_params['m1'], m2=input_params['m2'],
+                        chi1x=input_params['chi1x'], chi1y=input_params['chi1y'], chi1z=input_params['chi1z'],
+                        chi2x=input_params['chi2x'], chi2y=input_params['chi2y'], chi2z=input_params['chi2z'],
+                        f_min=input_params['f_min'], f_max=input_params['f_max'],
+                        delta_f=input_params['delta_f'],
+                        distance=input_params['distance'],
+                        fRef=input_params['fRef'], phiRef=input_params['phiRef'],
+                        inclination=input_params['inclination'])
+            self.flist_Hz = ph.flist_Hz
+            self.hptilde = ph.hp
+            self.hctilde = zeros(len(ph.hp))
 
         else:
             raise NotImplementedError("approximant = {0} is not implemented. Available approximants = {1}".format(input_params['approximant'], self.available_approximants))
