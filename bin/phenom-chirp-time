@@ -51,7 +51,7 @@ if __name__ == "__main__":
        print("please supply eta or q")
        sys.exit(1)
 
-    print "total mass = {0} Msun".format(args.mtot)
+    print("total mass = {0} Msun".format(args.mtot))
 
     m1,m2 = phenom.m1_m2_M_eta(args.mtot, args.eta)
     # get an instance of the phenomD model

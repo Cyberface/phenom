@@ -49,7 +49,7 @@ if __name__ == "__main__":
        print("please supply eta or q")
        sys.exit(1)
 
-    print "total mass = {0} Msun".format(args.mtot)
+    print("total mass = {0} Msun".format(args.mtot))
 
     fin_spin = phenom.remnant.FinalSpin0815(args.eta, args.chi1z, args.chi2z)
     fring = phenom.remnant.fring(args.eta, args.chi1z, args.chi2z, fin_spin)
@@ -58,8 +58,7 @@ if __name__ == "__main__":
     finalmass = (1. - phenom.remnant.EradRational0815(args.eta, args.chi1z, args.chi2z)) * args.mtot
 
 
-    print "final mass = {0} Msun".format(finalmass)
-    print "ringdown frequency in geometric units = ", fring
-    print "imaginary part of the ringdown frequency = ", fdamp
-    print "ringdown frequency in Hz = ", phenom.MftoHz(fring, args.mtot)
-
+    print("final mass = {0} Msun".format(finalmass))
+    print("ringdown frequency in geometric units = ", fring)
+    print("imaginary part of the ringdown frequency = ", fdamp)
+    print("ringdown frequency in Hz = ", phenom.MftoHz(fring, args.mtot))
