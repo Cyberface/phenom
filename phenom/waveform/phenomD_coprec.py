@@ -7,9 +7,40 @@ from __future__ import division
 
 import sys
 from phenom.waveform.waveform import Waveform
-from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, pow_2_of, pow_3_of, pow_4_of, Constants, HztoMf, StoM
+from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, pow_2_of, pow_3_of, pow_4_of, Constants, HztoMf, StoM, chip_fun
 from phenom.utils.remnant import fring, fdamp, FinalSpin0815, FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH
 from numpy import sqrt, pi, arange, zeros, exp, fabs, log, arctan, angle, unwrap, absolute
+import numpy as np
+
+import os
+from phenom.coprec_utils import psf, scale
+
+
+
+def cart_to_polar(x, y, z):
+    """
+    cartesian to spherical polar transformation.
+    phi (azimuthal angle) between [0, 2*pi]
+    returns: r, theta, phi
+    """
+    hxy = np.hypot(x, y)
+    r = np.hypot(hxy, z)
+    theta = np.arctan2(hxy, z)
+    phi = np.arctan2(y, x)
+    phi = phi % (2 * np.pi)
+    return r, theta, phi
+
+
+def polar_to_cart(r, theta, phi):
+    """
+    spherical polar to cartesian transformation
+    returns: x, y, z
+    """
+    x = r * np.sin(theta) * np.cos(phi)
+    y = r * np.sin(theta) * np.sin(phi)
+    z = r * np.cos(theta)
+    return x, y, z
+
 
 class PhenomDInternalsAmplitude(object):
     """docstring for PhenomDInternalsAmplitude"""
@@ -194,55 +225,33 @@ class PhenomDInternalsAmplitude(object):
     # // Phenom coefficients gamma1, ..., gamma3
     # // AmpMRDAnsatzFunc[]
 
+    def _get_gamma_fit(self, p, parname):
+        eta = p['eta']
+        costheta1 = p['costheta1']
+        chi1 = p['chi1']
+
+        coords = np.array([eta, costheta1, chi1]).reshape(1,-1)
+
+        path = "/home/sebastian.khan/projects/eh-lal/compare-ns-co-prec/puck/sk/amp_high"
+        
+        amp_X_scalers = scale.load_scalers(os.path.join(path, parname, "X_scalers.npy"))
+        amp_Y_scalers = scale.load_scalers(os.path.join(path, parname, "Y_scalers.npy"))
+
+        par_model_high = psf.load_model(filename=f'{path}/{parname}/model.pickle')
+        scaled_coords = scale.apply_scaler(coords, amp_X_scalers)
+        scaled_yhat = par_model_high.predict(scaled_coords.reshape(1,-1))
+        yhat = scale.apply_inverse_scaler(scaled_yhat.reshape(-1,1), amp_Y_scalers)[:,0]
+        return yhat
+    
     def gamma1_fun(self, p):
-        """
-        gamma 1 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
-        """
-        eta = p['eta']
-        chi = p['chipn']
-        xi = -1 + chi
-        xi2 = xi*xi
-        xi3 = xi2*xi
-        eta2 = eta*eta
-
-        return 0.006927402739328343 + 0.03020474290328911*eta \
-        + (0.006308024337706171 - 0.12074130661131138*eta + 0.26271598905781324*eta2)*xi \
-        + (0.0034151773647198794 - 0.10779338611188374*eta + 0.27098966966891747*eta2)*xi2 \
-        + (0.0007374185938559283 - 0.02749621038376281*eta + 0.0733150789135702*eta2)*xi3
-
-
+        return self._get_gamma_fit(p, 'gamma1')
     def gamma2_fun(self, p):
-        """
-        gamma 2 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
-        """
-        eta = p['eta']
-        chi = p['chipn']
-        xi = -1 + chi
-        xi2 = xi*xi
-        xi3 = xi2*xi
-        eta2 = eta*eta
-
-        return 1.010344404799477 + 0.0008993122007234548*eta \
-        + (0.283949116804459 - 4.049752962958005*eta + 13.207828172665366*eta2)*xi \
-        + (0.10396278486805426 - 7.025059158961947*eta + 24.784892370130475*eta2)*xi2 \
-        + (0.03093202475605892 - 2.6924023896851663*eta + 9.609374464684983*eta2)*xi3
-
-
+        return self._get_gamma_fit(p, 'gamma2')
     def gamma3_fun(self, p):
-        """
-        gamma 3 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
-        """
-        eta = p['eta']
-        chi = p['chipn']
-        xi = -1 + chi
-        xi2 = xi*xi
-        xi3 = xi2*xi
-        eta2 = eta*eta
-
-        return 1.3081615607036106 - 0.005537729694807678*eta \
-        + (-0.06782917938621007 - 0.6689834970767117*eta + 3.403147966134083*eta2)*xi \
-        + (-0.05296577374411866 - 0.9923793203111362*eta + 4.820681208409587*eta2)*xi2 \
-        + (-0.006134139870393713 - 0.38429253308696365*eta + 1.7561754421985984*eta2)*xi3
+        return self._get_gamma_fit(p, 'gamma3')
+    def gamma4_fun(self, p):
+        return self._get_gamma_fit(p, 'gamma4')
+    
 
     def AmpMRDAnsatz(self, Mf, model_pars):
         """
@@ -254,10 +263,15 @@ class PhenomDInternalsAmplitude(object):
         gamma1 = model_pars['gamma1']
         gamma2 = model_pars['gamma2']
         gamma3 = model_pars['gamma3']
+        gamma4 = model_pars['gamma4']
         fDMgamma3 = fDM*gamma3
-        fminfRD = Mf - fRD
-        return exp( -(fminfRD)*gamma2 / (fDMgamma3) ) \
+        fminfRD = Mf - (fRD*(1+gamma4))
+
+        ans = exp( -(fminfRD)*gamma2 / (fDMgamma3) ) \
         * (fDMgamma3*gamma1) / (pow_2_of(fminfRD) + pow_2_of(fDMgamma3))
+        return ans * 2 # FIXME WHERE DID THIS FACTOR OF 2 COME FROM?
+    
+     
 
 
     def DAmpMRDAnsatz(self, Mf, model_pars):
@@ -270,15 +284,17 @@ class PhenomDInternalsAmplitude(object):
         gamma1 = model_pars['gamma1']
         gamma2 = model_pars['gamma2']
         gamma3 = model_pars['gamma3']
+        gamma4 = model_pars['gamma4']
 
         fDMgamma3 = fDM * gamma3
         pow2_fDMgamma3 = pow_2_of(fDMgamma3)
-        fminfRD = Mf - fRD
+        fminfRD = Mf - (fRD*(1+gamma4))
         expfactor = exp(((fminfRD)*gamma2)/(fDMgamma3))
         pow2pluspow2 = pow_2_of(fminfRD) + pow2_fDMgamma3
-
-        return (-2*fDM*(fminfRD)*gamma3*gamma1) / ( expfactor * pow_2_of(pow2pluspow2)) \
+    
+        ans = (-2*fDM*(fminfRD)*gamma3*gamma1) / ( expfactor * pow_2_of(pow2pluspow2)) \
         - (gamma2*gamma1) / ( expfactor * (pow2pluspow2))
+        return ans * 2 # FIXME WHERE DID THIS FACTOR OF 2 COME FROM?
 
 
     def fmaxCalc(self, model_pars):
@@ -290,13 +306,14 @@ class PhenomDInternalsAmplitude(object):
         fDM    = model_pars['fDM']
         gamma2 = model_pars['gamma2']
         gamma3 = model_pars['gamma3']
+        gamma4 = model_pars['gamma4']
 
         # // NOTE: There's a problem with this expression from the paper becoming imaginary if gamma2>=1
         # // Fix: if gamma2 >= 1 then set the square root term to zero.
         if (gamma2 <= 1):
-            return fabs(fRD + (fDM*(-1 + sqrt(1 - pow_2_of(gamma2)))*gamma3)/gamma2)
+            return fabs((fRD*(1+gamma4)) + (fDM*(-1 + sqrt(1 - pow_2_of(gamma2)))*gamma3)/gamma2)
         else:
-            return fabs(fRD + (fDM*(-1)*gamma3)/gamma2)
+            return fabs((fRD*(1+gamma4)) + (fDM*(-1)*gamma3)/gamma2)
 
     # ///////////////////////////// Amplitude: Intermediate functions ////////////////////////
 
@@ -568,85 +585,38 @@ class PhenomDInternalsPhase(object):
     # // alpha_i i=1,2,3,4,5 are the phenomenological intermediate coefficients depending on eta and chiPN
     # // PhiRingdownAnsatz is the ringdown phasing in terms of the alpha_i coefficients
 
-    def alpha1Fit(self, p):
-        """
-        alpha 1 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
-        """
+    def _get_alpha_fit(self, p, parname):
         eta = p['eta']
-        chi = p['chipn']
-        xi = -1 + chi
-        xi2 = xi*xi
-        xi3 = xi2*xi
-        eta2 = eta*eta
+        costheta1 = p['costheta1']
+        chi1 = p['chi1']
 
-        return 43.31514709695348 + 638.6332679188081*eta \
-        + (-32.85768747216059 + 2415.8938269370315*eta - 5766.875169379177*eta2)*xi \
-        + (-61.85459307173841 + 2953.967762459948*eta - 8986.29057591497*eta2)*xi2 \
-        + (-21.571435779762044 + 981.2158224673428*eta - 3239.5664895930286*eta2)*xi3
+        coords = np.array([eta, costheta1, chi1]).reshape(1,-1)
+        
+        path = "/home/sebastian.khan/projects/eh-lal/compare-ns-co-prec/puck/sk/phase_high"
+
+        phase_X_scalers = scale.load_scalers(os.path.join(path, parname, "X_scalers.npy"))
+        phase_Y_scalers = scale.load_scalers(os.path.join(path, parname, "Y_scalers.npy"))
+
+        par_model_high = psf.load_model(filename=f'{path}/{parname}/model.pickle')
+        scaled_coords = scale.apply_scaler(coords, phase_X_scalers)
+        scaled_yhat = par_model_high.predict(scaled_coords.reshape(1,-1))
+        yhat = scale.apply_inverse_scaler(scaled_yhat.reshape(-1,1), phase_Y_scalers)[:,0]
+        return yhat
+    
+    def alpha1Fit(self, p):
+        return self._get_alpha_fit(p, 'a1')
 
     def alpha2Fit(self, p):
-        """
-        alpha 2 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
-        """
-        eta = p['eta']
-        chi = p['chipn']
-        xi = -1 + chi
-        xi2 = xi*xi
-        xi3 = xi2*xi
-        eta2 = eta*eta
-
-        return -0.07020209449091723 - 0.16269798450687084*eta \
-        + (-0.1872514685185499 + 1.138313650449945*eta - 2.8334196304430046*eta2)*xi \
-        + (-0.17137955686840617 + 1.7197549338119527*eta - 4.539717148261272*eta2)*xi2 \
-        + (-0.049983437357548705 + 0.6062072055948309*eta - 1.682769616644546*eta2)*xi3
+        return self._get_alpha_fit(p, 'a2')
 
     def alpha3Fit(self, p):
-        """
-        alpha 3 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
-        """
-        eta = p['eta']
-        chi = p['chipn']
-        xi = -1 + chi
-        xi2 = xi*xi
-        xi3 = xi2*xi
-        eta2 = eta*eta
-
-        return 9.5988072383479 - 397.05438595557433*eta \
-        + (16.202126189517813 - 1574.8286986717037*eta + 3600.3410843831093*eta2)*xi \
-        + (27.092429659075467 - 1786.482357315139*eta + 5152.919378666511*eta2)*xi2 \
-        + (11.175710130033895 - 577.7999423177481*eta + 1808.730762932043*eta2)*xi3
+        return self._get_alpha_fit(p, 'a3')
 
     def alpha4Fit(self, p):
-        """
-        alpha 4 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
-        """
-        eta = p['eta']
-        chi = p['chipn']
-        xi = -1 + chi
-        xi2 = xi*xi
-        xi3 = xi2*xi
-        eta2 = eta*eta
-
-        return -0.02989487384493607 + 1.4022106448583738*eta \
-        + (-0.07356049468633846 + 0.8337006542278661*eta + 0.2240008282397391*eta2)*xi \
-        + (-0.055202870001177226 + 0.5667186343606578*eta + 0.7186931973380503*eta2)*xi2 \
-        + (-0.015507437354325743 + 0.15750322779277187*eta + 0.21076815715176228*eta2)*xi3
+        return self._get_alpha_fit(p, 'a4')
 
     def alpha5Fit(self, p):
-        """
-        alpha 5 phenom coefficient. See corresponding row in Table 5 arXiv:1508.07253
-        """
-        eta = p['eta']
-        chi = p['chipn']
-        xi = -1 + chi
-        xi2 = xi*xi
-        xi3 = xi2*xi
-        eta2 = eta*eta
-
-        return 0.9974408278363099 - 0.007884449714907203*eta \
-        + (-0.059046901195591035 + 1.3958712396764088*eta - 4.516631601676276*eta2)*xi \
-        + (-0.05585343136869692 + 1.7516580039343603*eta - 5.990208965347804*eta2)*xi2 \
-        + (-0.017945336522161195 + 0.5965097794825992*eta - 2.0608879367971804*eta2)*xi3
+        return self._get_alpha_fit(p, 'a5')
 
     def PhiMRDAnsatzInt(self, Mf, model_pars, rholm=1.0, taulm=1.0 ):
         """
@@ -668,7 +638,7 @@ class PhenomDInternalsPhase(object):
               + model_pars['alpha4'] * rholm * arctan( (Mf - model_pars['alpha5'] * model_pars['fRD']) / (rholm * model_pars['fDM'] * taulm) )
 
         #
-        return ans
+        return -ans
 
     def DPhiMRD(self, Mf, model_pars, eta, rholm=1.0, taulm=1.0):
         """
@@ -679,8 +649,9 @@ class PhenomDInternalsPhase(object):
         Taulm = fDMlm/fDM22. Ratio of ringdown damping times.
         Again, when Taulm = 1.0 then PhenomD is recovered.
         """
-        return (model_pars['alpha1'] + model_pars['alpha2']/pow_2_of(Mf) + model_pars['alpha3']/(Mf**0.25) + \
+        ans = (model_pars['alpha1'] + model_pars['alpha2']/pow_2_of(Mf) + model_pars['alpha3']/(Mf**0.25) + \
         model_pars['alpha4']/(model_pars['fDM']*taulm*(1 + pow_2_of(Mf - model_pars['alpha5'] * model_pars['fRD'])/pow_2_of(rholm*model_pars['fDM']*taulm)))) / eta
+        return -ans
 
     # ///////////////////////////// Phase: Intermediate functions /////////////////////////////
     #
@@ -1154,8 +1125,8 @@ class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
     def __init__(self):
         pass
 
-class PhenomD(PhenomDInternals):
-    """docstring for PhenomD"""
+class PhenomDCOPREC(PhenomDInternals):
+    """docstring for PhenomD coprec versions"""
 
     #sets phenomD CONSTANTS
     #https://github.com/lscsoft/lalsuite/blob/master/lalsimulation/src/LALSimIMRPhenomD.h
@@ -1197,7 +1168,11 @@ class PhenomD(PhenomDInternals):
     def __init__(self,
                  m1=10.,
                  m2=10.,
+                 chi1x=0.,
+                 chi1y=0.,
                  chi1z=0.,
+                 chi2x=0.,
+                 chi2y=0.,
                  chi2z=0.,
                  f_min=20.,
                  f_max=0.,
@@ -1205,7 +1180,7 @@ class PhenomD(PhenomDInternals):
                  distance=1e6 * Constants.PC_SI,
                  fRef=0.,
                  phiRef=0.,
-                 finspin_func="FinalSpin0815",
+                 finspin_func="FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH",
                  rholm=1.0,
                  taulm=1.0,
                  **kwargs):
@@ -1221,7 +1196,7 @@ class PhenomD(PhenomDInternals):
         distance (m) : Default 1e6 * Constants.PC_SI = 1 mega parsec
         fRef (reference frequency Hz)
         phiRef (orbital phase at fRef)
-        finspin_func='FinalSpin0815' (used because PhenomP changes what is used to calculate the final spin.)
+        finspin_func='FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH' (used because PhenomP changes what is used to calculate the final spin.)
         Rholm = fRD22/fRDlm. For PhenomD (only (l,m)=(2,2)) this is just equal to 1. and PhenomD is recovered.
         Taulm = fDMlm/fDM22. Ratio of ringdown damping times. Again, when Taulm = 1.0 then PhenomD is recovered.
         **kwargs ( currently the only extra kwarg that is passed is chip or chi1x. )
@@ -1237,13 +1212,19 @@ class PhenomD(PhenomDInternals):
 
         # enforce m1 >= m2 and chi1 is on m1
         if m1<m2: # swap spins and masses
+            chi1x, chi2x = chi2x, chi1x
+            chi1y, chi2y = chi2y, chi1y
             chi1z, chi2z = chi2z, chi1z
             m1, m2 = m2, m1
 
         self.p                = {}
         self.p['m1']          = float(m1)
         self.p['m2']          = float(m2)
+        self.p['chi1x']       = float(chi1x)
+        self.p['chi1y']       = float(chi1y)
         self.p['chi1z']       = float(chi1z)
+        self.p['chi2x']       = float(chi2x)
+        self.p['chi2y']       = float(chi2y)
         self.p['chi2z']       = float(chi2z)
         self.p['f_min']       = float(f_min)
         self.p['f_max']       = float(f_max)
@@ -1256,10 +1237,18 @@ class PhenomD(PhenomDInternals):
         #'transform to model parameters' function
         if "chip" in kwargs:
             self.p['chip'] = float(kwargs['chip'])
+        else:
+            lnhatx = 0.
+            lnhaty = 0.
+            lnhatz = 1.
+            self.p['chip'], chi1_l, chi2_l = chip_fun(self.p['m1'], self.p['m2'], self.p['chi1x'], self.p['chi1y'], self.p['chi1z'], self.p['chi2x'], self.p['chi2y'], self.p['chi2z'], lnhatx, lnhaty, lnhatz)
 
         self.p['Mtot'], self.p['eta'] = M_eta_m1_m2(self.p['m1'], self.p['m2'])
         self.p['chipn'] = chipn(self.p['eta'], self.p['chi1z'], self.p['chi2z'])
 
+        self.p['chi1'], self.p['theta1'], self.p['phi1'] = cart_to_polar(self.p['chi1x'], self.p['chi1y'], self.p['chi1z'])
+        self.p['costheta1'] = np.cos(self.p['theta1'])
+        
         #initialise UsefulPowers instances
         self.powers_of_pi = UsefulPowers(pi)
 
@@ -1322,6 +1311,7 @@ class PhenomD(PhenomDInternals):
         model_pars['gamma1'] = self.gamma1_fun(p)
         model_pars['gamma2'] = self.gamma2_fun(p)
         model_pars['gamma3'] = self.gamma3_fun(p)
+        model_pars['gamma4'] = self.gamma4_fun(p)
 
         # fmaxCalc is the peak of the merger-ringdown amplitude function
         model_pars['fmaxCalc'] = self.fmaxCalc(model_pars)
