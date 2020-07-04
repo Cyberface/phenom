@@ -6,7 +6,7 @@ from phenom.utils.utils import M_eta_m1_m2, chipn, UsefulPowers, pow_2_of, pow_3
 from phenom.utils.remnant import fring, fdamp, FinalSpin0815, FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH
 from numpy import sqrt, pi, arange, zeros, exp, fabs, log, arctan, angle, unwrap, absolute
 
-class PhenomDInternalsAmplitude(object):
+class PrototypePhenomDCoprecessInternalsAmplitude(object):
     """docstring for PhenomDInternalsAmplitude"""
     def __init__(self):
         pass
@@ -244,15 +244,49 @@ class PhenomDInternalsAmplitude(object):
         input frequency : Mf
         Ansatz for the merger-ringdown amplitude. Equation 19 arXiv:1508.07253
         """
-        fRD = model_pars['fRD']
-        fDM = model_pars['fDM']
+        
+        # Preliminaries 
+        # --
+        
+        # Legacy PhonemD parameters
         gamma1 = model_pars['gamma1']
         gamma2 = model_pars['gamma2']
         gamma3 = model_pars['gamma3']
-        fDMgamma3 = fDM*gamma3
-        fminfRD = Mf - fRD
-        return exp( -(fminfRD)*gamma2 / (fDMgamma3) ) \
-        * (fDMgamma3*gamma1) / (pow_2_of(fminfRD) + pow_2_of(fDMgamma3))
+        
+        #
+        fdamp = model_pars['fDM']
+        fring = model_pars['fRD']
+        chip = model_pars['chip']
+        
+        #
+        mu1 = model_pars['mu1']
+        mu2 = model_pars['mu2']
+        mu3 = model_pars['mu3']
+        mu4 = model_pars['mu4']
+        
+        # Define new paremeters
+        # --
+        
+        new_gamma1 = gamma1 + ( chip * mu1 )
+        new_gamma2 = gamma2 + ( chip * mu2 )
+        new_gamma3 = gamma3
+        new_fdamp = fdamp + chip*mu3
+        new_fring = fring + chip*mu4
+        new_dfring = Mf - new_fring
+        new_gamma3_fdamp = new_gamma3 * new_fdamp
+
+        #
+        part1 = new_gamma1 * new_gamma3_fdamp / ( new_dfring**2 + new_gamma3_fdamp**2 )
+        part2 = exp(  - new_gamma2 * new_dfring / (new_gamma3_fdamp)  )
+
+        #
+        amplitude = part1 * part2
+        
+        #
+        # amplitude = amplitude * (sqrt(2.0/3.0)*sqrt(eta)) / pi**(1.0/6.0)
+        
+        #
+        return amplitude
 
 
     def DAmpMRDAnsatz(self, Mf, model_pars):
@@ -260,20 +294,77 @@ class PhenomDInternalsAmplitude(object):
         input frequency : Mf
         first frequency derivative of AmpMRDAnsatz
         """
-        fRD = model_pars['fRD']
-        fDM = model_pars['fDM']
+        
+        # Preliminaries 
+        # ---
+        
+        # Legacy PhonemD parameters
         gamma1 = model_pars['gamma1']
         gamma2 = model_pars['gamma2']
         gamma3 = model_pars['gamma3']
+        
+        #
+        fdamp = model_pars['fDM']
+        fring = model_pars['fRD']
+        chip = model_pars['chip']
+        mu1 = model_pars['mu1']
+        mu2 = model_pars['mu2']
+        mu3 = model_pars['mu3']
+        mu4 = model_pars['mu4']
+        
+        # Define new paremeters
+        # ---
+        new_gamma1 = gamma1 + ( chip * mu1 )
+        new_gamma2 = gamma2 + ( chip * mu2 )
+        new_gamma3 = gamma3
+        new_fdamp = fdamp + chip*mu3
+        new_fring = fring + chip*mu4
+        new_dfring = Mf - new_fring
+        new_gamma3_fdamp = new_gamma3 * new_fdamp
+        
+        # Construct derivative of modified amplitude
+        # ---
+        
+        #
+        precomp_quantity_1 = new_dfring**2 + new_gamma3_fdamp**2 
+        precomp_quantity_2 = exp( new_dfring * new_gamma2  / new_gamma3_fdamp )
+        
+        #
+        part1a = -2 * new_fdamp * new_dfring * new_gamma3 * new_gamma1
+        part1b = ( precomp_quantity_1 ** 2 ) * precomp_quantity_2
+        part1 = part1a/part1b
+        
+        #
+        part2a = - new_gamma2*new_gamma1
+        part2b = precomp_quantity_2 * precomp_quantity_1
+        part2 = part2a / part2b
+        
+        #
+        derivative_amplitude = part1 + part2
+        
+        #
+        return derivative_amplitude
 
-        fDMgamma3 = fDM * gamma3
-        pow2_fDMgamma3 = pow_2_of(fDMgamma3)
-        fminfRD = Mf - fRD
-        expfactor = exp(((fminfRD)*gamma2)/(fDMgamma3))
-        pow2pluspow2 = pow_2_of(fminfRD) + pow2_fDMgamma3
 
-        return (-2*fDM*(fminfRD)*gamma3*gamma1) / ( expfactor * pow_2_of(pow2pluspow2)) \
-        - (gamma2*gamma1) / ( expfactor * (pow2pluspow2))
+    # def DAmpMRDAnsatz(self, Mf, model_pars):
+    #     """
+    #     input frequency : Mf
+    #     first frequency derivative of AmpMRDAnsatz
+    #     """
+    #     fRD = model_pars['fRD']
+    #     fDM = model_pars['fDM']
+    #     gamma1 = model_pars['gamma1']
+    #     gamma2 = model_pars['gamma2']
+    #     gamma3 = model_pars['gamma3']
+
+    #     fDMgamma3 = fDM * gamma3
+    #     pow2_fDMgamma3 = pow_2_of(fDMgamma3)
+    #     fminfRD = Mf - fRD
+    #     expfactor = exp(((fminfRD)*gamma2)/(fDMgamma3))
+    #     pow2pluspow2 = pow_2_of(fminfRD) + pow2_fDMgamma3
+
+    #     return (-2*fDM*(fminfRD)*gamma3*gamma1) / ( expfactor * pow_2_of(pow2pluspow2)) \
+    #     - (gamma2*gamma1) / ( expfactor * (pow2pluspow2))
 
 
     def fmaxCalc(self, model_pars):
@@ -552,7 +643,7 @@ class PhenomDInternalsAmplitude(object):
         delta_params['delta4'] = self.delta4_fun(delta_params, d)
         return delta_params
 
-class PhenomDInternalsPhase(object):
+class PrototypePhenomDCoprecessInternalsPhase(object):
     """docstring for PhenomDInternalsPhase"""
     def __init__(self):
         pass
@@ -652,18 +743,74 @@ class PhenomDInternalsPhase(object):
         Taulm = fDMlm/fDM22. Ratio of ringdown damping times.
         Again, when Taulm = 1.0 then PhenomD is recovered.
         """
-        sqrootf = sqrt(Mf);
-        fpow1_5 = Mf * sqrootf;
-        # // check if this is any faster: 2 sqrts instead of one pow(x,0.75)
-        fpow0_75 = sqrt(fpow1_5); # pow(f,0.75)
+        
+        # 
+        chip = model_pars['chip']
+        
+        # Phase parameters
+        alpha1 = model_pars['alpha1']
+        alpha2 = model_pars['alpha2']
+        alpha3 = model_pars['alpha3']
+        alpha4 = model_pars['alpha4']
+        alpha5 = model_pars['alpha5']
 
-        ans = -(model_pars['alpha2']/Mf) \
-              + (4.0/3.0) * (model_pars['alpha3'] * fpow0_75) \
-              + model_pars['alpha1'] * Mf \
-              + model_pars['alpha4'] * rholm * arctan( (Mf - model_pars['alpha5'] * model_pars['fRD']) / (rholm * model_pars['fDM'] * taulm) )
-
+        # PhenomD remnant parameters
+        fdamp = model_pars['fDM']
+        fring = model_pars['fRD']
+        chip = model_pars['chip']
+        
         #
-        return ans
+        nu1 = 0
+        nu2 = 0
+        nu3 = 0
+        nu4 = model_pars['nu4']
+        nu5 = model_pars['nu5']
+        nu6 = model_pars['nu6']
+        
+        # Define new paremeters -- Late inspiral, Plunge
+        new_alpha1 = alpha1 + ( chip * nu1 )
+        new_alpha2 = alpha2 + ( chip * nu2 )
+        new_alpha3 = alpha3 + ( chip * nu3 )
+        
+        # Define new paremeters --  Merger
+        new_alpha4 = alpha4 + ( chip * nu4 )
+        new_fring = fring + chip*nu5
+        new_fdamp = fdamp + chip*nu6
+        new_dfring = Mf - alpha5*new_fring
+        
+        # NOTE that part1 is identical to the PhenomD equivalent
+        float4by3 = 1.3333333333333333
+        part1 = new_alpha1*Mf  -  new_alpha2/Mf  +  float4by3*new_alpha3*(Mf**0.75)
+        # NOTE that we use arctan here not arctan2 because the denominator is always positive
+        part2 = new_alpha4 * arctan( new_dfring / new_fdamp )
+        
+        # NOTE that the minus sign signals the phase convention used internally
+        phi = part1 + part2
+        
+        #
+        return phi
+
+    # def PhiMRDAnsatzInt(self, Mf, model_pars, rholm=1.0, taulm=1.0 ):
+    #     """
+    #     Ansatz for the merger-ringdown phase Equation 14 arXiv:1508.07253
+    #     Rholm was added when IMRPhenomHM (high mode) was added.
+    #     Rholm = fRD22/fRDlm. For PhenomD (only (l,m)=(2,2)) this is just equal
+    #     to 1. and PhenomD is recovered.
+    #     Taulm = fDMlm/fDM22. Ratio of ringdown damping times.
+    #     Again, when Taulm = 1.0 then PhenomD is recovered.
+    #     """
+    #     sqrootf = sqrt(Mf);
+    #     fpow1_5 = Mf * sqrootf;
+    #     # // check if this is any faster: 2 sqrts instead of one pow(x,0.75)
+    #     fpow0_75 = sqrt(fpow1_5); # pow(f,0.75)
+
+    #     ans = -(model_pars['alpha2']/Mf) \
+    #           + (4.0/3.0) * (model_pars['alpha3'] * fpow0_75) \
+    #           + model_pars['alpha1'] * Mf \
+    #           + model_pars['alpha4'] * rholm * arctan( (Mf - model_pars['alpha5'] * model_pars['fRD']) / (rholm * model_pars['fDM'] * taulm) )
+
+    #     #
+    #     return ans
 
     def DPhiMRD(self, Mf, model_pars, eta, rholm=1.0, taulm=1.0):
         """
@@ -674,8 +821,65 @@ class PhenomDInternalsPhase(object):
         Taulm = fDMlm/fDM22. Ratio of ringdown damping times.
         Again, when Taulm = 1.0 then PhenomD is recovered.
         """
-        return (model_pars['alpha1'] + model_pars['alpha2']/pow_2_of(Mf) + model_pars['alpha3']/(Mf**0.25) + \
-        model_pars['alpha4']/(model_pars['fDM']*taulm*(1 + pow_2_of(Mf - model_pars['alpha5'] * model_pars['fRD'])/pow_2_of(rholm*model_pars['fDM']*taulm)))) / eta
+        
+        # Preliminaries 
+        # --
+        
+        # Legacy PhonemD parameters
+        alpha1 = model_pars['alpha1']
+        alpha2 = model_pars['alpha2']
+        alpha3 = model_pars['alpha3']
+        alpha4 = model_pars['alpha4']
+        alpha5 = model_pars['alpha5']
+        
+        #
+        fdamp = model_pars['fDM']
+        fring = model_pars['fRD']
+        chip = model_pars['chip']
+        
+        #
+        nu1 = 0
+        nu2 = 0
+        nu3 = 0
+        nu4 = model_pars['nu4']
+        nu5 = model_pars['nu5']
+        nu6 = model_pars['nu6']
+        
+        # Define new paremeters
+        # --
+
+        # Define new paremeters -- Late inspiral, Plunge
+        new_alpha1 = alpha1 + ( chip * nu1 )
+        new_alpha2 = alpha2 + ( chip * nu2 )
+        new_alpha3 = alpha3 + ( chip * nu3 )
+        
+        #Define new paremeters --  Merger
+        new_alpha4 = alpha4 + ( chip * nu4 )
+        new_fring = fring + chip*nu5
+        new_fdamp = fdamp + chip*nu6
+        new_dfring = Mf - alpha5*new_fring
+
+        #
+        part1 = new_alpha1 + new_alpha2*Mf**(-2.0) + new_alpha3*Mf**(-0.25) 
+        part2 = new_alpha4 / (  new_fdamp*(1 + (new_dfring**2)/(new_fdamp**2))  )
+        
+        #
+        dphi = (part1 + part2)/eta
+        
+        #
+        return dphi
+
+    # def DPhiMRD(self, Mf, model_pars, eta, rholm=1.0, taulm=1.0):
+    #     """
+    #     First frequency derivative of PhiMRDAnsatzInt
+    #     Rholm was added when IMRPhenomHM (high mode) was added.
+    #     Rholm = fRD22/fRDlm. For PhenomD (only (l,m)=(2,2)) this is just equal
+    #     to 1. and PhenomD is recovered.
+    #     Taulm = fDMlm/fDM22. Ratio of ringdown damping times.
+    #     Again, when Taulm = 1.0 then PhenomD is recovered.
+    #     """
+    #     return (model_pars['alpha1'] + model_pars['alpha2']/pow_2_of(Mf) + model_pars['alpha3']/(Mf**0.25) + \
+    #     model_pars['alpha4']/(model_pars['fDM']*taulm*(1 + pow_2_of(Mf - model_pars['alpha5'] * model_pars['fRD'])/pow_2_of(rholm*model_pars['fDM']*taulm)))) / eta
 
     # ///////////////////////////// Phase: Intermediate functions /////////////////////////////
     #
@@ -1144,12 +1348,12 @@ class PhenomDInternalsPhase(object):
         C1MRD = PhiIntTempVal - 1.0/eta * self.PhiMRDAnsatzInt(fMRDJoin, model_pars, rholm, taulm) - C2MRD*fMRDJoin
         return C1Int, C2Int, C1MRD, C2MRD
 
-class PhenomDInternals(PhenomDInternalsAmplitude, PhenomDInternalsPhase):
+class PrototypePhenomDCoprecessInternals(PrototypePhenomDCoprecessInternalsAmplitude, PrototypePhenomDCoprecessInternalsPhase):
     """docstring for PhenomDInternals"""
     def __init__(self):
         pass
 
-class PhenomD(PhenomDInternals):
+class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
     """docstring for PhenomD"""
 
     #sets phenomD CONSTANTS
@@ -1203,6 +1407,14 @@ class PhenomD(PhenomDInternals):
                  finspin_func="FinalSpin0815",
                  rholm=1.0,
                  taulm=1.0,
+                 mu1 = 0,
+                 mu2 = 0,
+                 mu3 = 0,
+                 mu4 = 0,
+                 nu4 = 0,
+                 nu5 = 0,
+                 nu6 = 0,
+                 chip = 0,
                  **kwargs):
         """
         input:
@@ -1262,12 +1474,12 @@ class PhenomD(PhenomDInternals):
         #final spin is a variable because phenomP uses a different final spin to
         #phenomD
         self.finspin_func = finspin_func
-        self.model_pars = self.compute_model_parameters(self.p, self.finspin_func, rholm, taulm)
+        self.model_pars = self.compute_model_parameters(self.p, self.finspin_func, rholm, taulm, mu1, mu2, mu3, mu4, nu4, nu5, nu6, chip )
 
 
         #end of __init__()
 
-    def compute_model_parameters(self, p, finspin_func, rholm=1.0, taulm=1.0):
+    def compute_model_parameters(self, p, finspin_func, rholm=1.0, taulm=1.0, mu1=0, mu2=0, mu3=0, mu4=0, nu4=0, nu5=0, nu6=0, chip=0 ):
         """
         compute_model_parameters(p, finspin_func)
         p : dict
@@ -1282,6 +1494,18 @@ class PhenomD(PhenomDInternals):
 
         # Compute the amplitude pre-factor
         model_pars['amp0'] = 2. * sqrt(5. / (64.*pi)) * p['Mtot'] * Constants.MRSUN_SI * p['Mtot'] * Constants.MTSUN_SI / p['distance']
+        
+        # MRD amplitude deviation coefficients for coprecessing frame modeling 
+        model_pars['mu1'] = mu1
+        model_pars['mu2'] = mu2
+        model_pars['mu3'] = mu3
+        model_pars['mu4'] = mu4
+        #
+        model_pars['nu4'] = nu4
+        model_pars['nu5'] = nu5
+        model_pars['nu6'] = nu6
+        #
+        model_pars['chip'] = chip
 
         model_pars['M_sec'] = p['Mtot'] * Constants.MTSUN_SI # Conversion factor Hz -> dimensionless frequency
 
@@ -1311,7 +1535,7 @@ class PhenomD(PhenomDInternals):
 
         #inspiral amplitude prefactors
         #only need to pass rho1, rho2 and rho3 from model_pars
-        model_pars['amp_prefactors'] = super(PhenomDInternals, self).init_amp_ins_prefactors(p, model_pars, self.powers_of_pi)
+        model_pars['amp_prefactors'] = super(PrototypePhenomDCoprecessInternals, self).init_amp_ins_prefactors(p, model_pars, self.powers_of_pi)
 
         #merger-ringdown amplitude coeffs
         model_pars['gamma1'] = self.gamma1_fun(p)
