@@ -372,17 +372,58 @@ class PrototypePhenomDCoprecessInternalsAmplitude(object):
         Equation 20 arXiv:1508.07253 (called f_peak in paper)
         analytic location of maximum of AmpMRDAnsatz
         """
-        fRD    = model_pars['fRD']
-        fDM    = model_pars['fDM']
+        
+        # Preliminaries 
+        # --
+        
+        # Legacy PhonemD parameters
         gamma2 = model_pars['gamma2']
         gamma3 = model_pars['gamma3']
+        
+        #
+        fdamp = model_pars['fDM']
+        fring = model_pars['fRD']
+        chip = model_pars['chip']
+        
+        #
+        mu1 = model_pars['mu1']
+        mu2 = model_pars['mu2']
+        mu3 = model_pars['mu3']
+        mu4 = model_pars['mu4']
+        
+        # Define new paremeters
+        # --
+        
+        new_gamma2 = gamma2 + ( chip * mu2 )
+        new_gamma3 = gamma3
+        new_fdamp = fdamp + chip*mu3
+        new_fring = fring + chip*mu4
+        new_gamma3_fdamp = new_gamma3 * new_fdamp
 
         # // NOTE: There's a problem with this expression from the paper becoming imaginary if gamma2>=1
         # // Fix: if gamma2 >= 1 then set the square root term to zero.
-        if (gamma2 <= 1):
-            return fabs(fRD + (fDM*(-1 + sqrt(1 - pow_2_of(gamma2)))*gamma3)/gamma2)
+        if (new_gamma2 <= 1):
+            return fabs(new_fring + (new_fdamp*(-1 + sqrt(1 - pow_2_of(new_gamma2)))*new_gamma3)/new_gamma2)
         else:
-            return fabs(fRD + (fDM*(-1)*gamma3)/gamma2)
+            return fabs(new_fring + (new_fdamp*(-1)*new_gamma3)/new_gamma2)
+
+
+    # def fmaxCalc(self, model_pars):
+    #     """
+    #     Equation 20 arXiv:1508.07253 (called f_peak in paper)
+    #     analytic location of maximum of AmpMRDAnsatz
+    #     """
+    #     fRD    = model_pars['fRD']
+    #     fDM    = model_pars['fDM']
+    #     gamma2 = model_pars['gamma2']
+    #     gamma3 = model_pars['gamma3']
+
+    #     # // NOTE: There's a problem with this expression from the paper becoming imaginary if gamma2>=1
+    #     # // Fix: if gamma2 >= 1 then set the square root term to zero.
+    #     if (gamma2 <= 1):
+    #         return fabs(fRD + (fDM*(-1 + sqrt(1 - pow_2_of(gamma2)))*gamma3)/gamma2)
+    #     else:
+    #         return fabs(fRD + (fDM*(-1)*gamma3)/gamma2)
 
     # ///////////////////////////// Amplitude: Intermediate functions ////////////////////////
 
