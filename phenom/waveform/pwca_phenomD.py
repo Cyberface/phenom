@@ -302,8 +302,8 @@ class PrototypePhenomDCoprecessInternalsAmplitude(object):
         new_gamma1 = gamma1 + ( chip * mu1 )
         new_gamma2 = gamma2 + ( chip * mu2 )
         new_gamma3 = gamma3
-        new_fdamp = fdamp + chip*mu3
-        new_fring = fring + chip*mu4
+        new_fdamp = fdamp + chip*mu3 # same structurally as nu6
+        new_fring = fring + chip*mu4 # same structurally as nu5
         new_dfring = Mf - new_fring
         new_gamma3_fdamp = new_gamma3 * new_fdamp
 
@@ -1680,12 +1680,14 @@ class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
 
         amp_prefactors = model_pars['amp_prefactors']
         
-        #
+        # NOTE: It's strange that a leading order scale factor might be needed.
+        # This does not seem to be explained in eg 4.16 of https://arxiv.org/pdf/0810.5336.pdf
         chip = model_pars['chip']
         mu0  = model_pars['mu0']
-
+        AmpPreFac = (1+chip*mu0) * amp_prefactors['PNamp0'] / powers_of_Mf.seven_sixths
+        
         # AmpPreFac = amp_prefactors['PNamp0'] / powers_of_Mf.seven_sixths
-        AmpPreFac = (amp_prefactors['PNamp0']+chip*mu0) / powers_of_Mf.seven_sixths
+        
         # split the calculation to just 1 of 3 possible mutually exclusive ranges
         # this effectively implements a step function transition function
         if (Mf <= fInsJoin):	# Inspiral range
