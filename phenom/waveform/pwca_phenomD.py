@@ -123,7 +123,7 @@ class PrototypePhenomDCoprecessInternalsAmplitude(object):
 
         return prefactors
 
-    def AmpInsAnsatz(self, Mf, powers_of_Mf, prefactors):
+    def AmpInsAnsatz(self, Mf, powers_of_Mf, prefactors, model_pars):
         # The Newtonian term in LAL is fine and we should use exactly the same (either hardcoded or call).
         # We just use the Mathematica expression for convenience.
         """
@@ -140,12 +140,38 @@ class PrototypePhenomDCoprecessInternalsAmplitude(object):
         Mf2 = powers_of_Mf.two
         Mf3 = Mf*Mf2
 
+        # 
         return 1 + powers_of_Mf.two_thirds * prefactors['two_thirds'] \
         		+ Mf * prefactors['one'] + powers_of_Mf.four_thirds * prefactors['four_thirds'] \
         		+ powers_of_Mf.five_thirds * prefactors['five_thirds'] + Mf2 * prefactors['two'] \
         		+ powers_of_Mf.seven_thirds * prefactors['seven_thirds'] \
                 + powers_of_Mf.eight_thirds * prefactors['eight_thirds'] \
-        		+ Mf3 * prefactors['three']
+        		+ Mf3 * prefactors['three'] #\
+                #+ chip*mu0*powers_of_Mf.two_thirds
+
+    # def AmpInsAnsatz(self, Mf, powers_of_Mf, prefactors):
+    #     # The Newtonian term in LAL is fine and we should use exactly the same (either hardcoded or call).
+    #     # We just use the Mathematica expression for convenience.
+    #     """
+    #     input:
+    #         Mf : float
+    #             dimensionless frequency
+    #         powers_of_Mf : instance of UsefulPowers class
+    #         prefactors : dict
+    #             output from init_amp_ins_prefactors function
+    #     Inspiral amplitude plus rho phenom coefficents. rho coefficients computed
+    #     in rho1_fun, rho2_fun, rho3_fun functions.
+    #     Amplitude is a re-expansion. See 1508.07253 and Equation 29, 30 and Appendix B arXiv:1508.07253 for details
+    #     """
+    #     Mf2 = powers_of_Mf.two
+    #     Mf3 = Mf*Mf2
+
+    #     return 1 + powers_of_Mf.two_thirds * prefactors['two_thirds'] \
+    #     		+ Mf * prefactors['one'] + powers_of_Mf.four_thirds * prefactors['four_thirds'] \
+    #     		+ powers_of_Mf.five_thirds * prefactors['five_thirds'] + Mf2 * prefactors['two'] \
+    #     		+ powers_of_Mf.seven_thirds * prefactors['seven_thirds'] \
+    #             + powers_of_Mf.eight_thirds * prefactors['eight_thirds'] \
+    #     		+ Mf3 * prefactors['three']
 
     def DAmpInsAnsatz(self, Mf, p, model_pars, powers_of_pi, powers_of_Mf):
         """
@@ -168,7 +194,12 @@ class PrototypePhenomDCoprecessInternalsAmplitude(object):
         Pi = pi
         Pi2 = powers_of_pi.two
         Seta = sqrt(1.0 - 4.0*eta)
+        
+        #
+        chip = model_pars['chip']
+        mu0  = model_pars['mu0']
 
+        # 
         return ((-969 + 1804*eta)*powers_of_pi.two_thirds)/(1008.*powers_of_Mf.third) \
         + ((chi1*(81*(1 + Seta) - 44*eta) + chi2*(81 - 81*Seta - 44*eta))*Pi)/48. \
         + ((-27312085 - 10287648*chi22 - 10287648*chi12*(1 + Seta) \
@@ -182,7 +213,8 @@ class PrototypePhenomDCoprecessInternalsAmplitude(object):
         + 11087290368*(chi1 + chi2 + chi1*Seta - chi2*Seta)*Pi) \
         + 12*eta*(-545384828789.0 - 176491177632*chi1*chi2 + 202603761360*chi22 + 77616*chi12*(2610335 + 995766*Seta) \
         - 77287373856*chi22*Seta + 5841690624*(chi1 + chi2)*Pi + 21384760320*Pi2)))/3.0042980352e10 \
-        + (7.0/3.0)*pow(Mf,4.0/3.0)*rho1 + (8.0/3.0)*powers_of_Mf.five_thirds*rho2 + 3*Mf2*rho3
+        + (7.0/3.0)*pow(Mf,4.0/3.0)*rho1 + (8.0/3.0)*powers_of_Mf.five_thirds*rho2 + 3*Mf2*rho3 #\
+        #+ (2.0/3.0)*chip*mu0/powers_of_Mf.third
 
     # /////////////////////////// Amplitude: Merger-Ringdown functions ///////////////////////
     #
@@ -641,7 +673,7 @@ class PrototypePhenomDCoprecessInternalsAmplitude(object):
 
         # // v1 is inspiral model evaluated at f1
         # // d1 is derivative of inspiral model evaluated at f1
-        v1 = self.AmpInsAnsatz(f1, powers_of_f1, model_pars['amp_prefactors'])
+        v1 = self.AmpInsAnsatz(f1, powers_of_f1, model_pars['amp_prefactors'], model_pars)
         d1 = self.DAmpInsAnsatz(f1, p, model_pars, powers_of_pi, powers_of_f1)
 
         # // v3 is merger-ringdown model evaluated at f3
@@ -1448,6 +1480,7 @@ class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
                  finspin_func="FinalSpin0815",
                  rholm=1.0,
                  taulm=1.0,
+                 mu0 = 0,
                  mu1 = 0,
                  mu2 = 0,
                  mu3 = 0,
@@ -1515,12 +1548,12 @@ class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
         #final spin is a variable because phenomP uses a different final spin to
         #phenomD
         self.finspin_func = finspin_func
-        self.model_pars = self.compute_model_parameters(self.p, self.finspin_func, rholm, taulm, mu1, mu2, mu3, mu4, nu4, nu5, nu6, chip )
+        self.model_pars = self.compute_model_parameters(self.p, self.finspin_func, rholm, taulm, mu0, mu1, mu2, mu3, mu4, nu4, nu5, nu6, chip )
 
 
         #end of __init__()
 
-    def compute_model_parameters(self, p, finspin_func, rholm=1.0, taulm=1.0, mu1=0, mu2=0, mu3=0, mu4=0, nu4=0, nu5=0, nu6=0, chip=0 ):
+    def compute_model_parameters(self, p, finspin_func, rholm=1.0, taulm=1.0, mu0=0, mu1=0, mu2=0, mu3=0, mu4=0, nu4=0, nu5=0, nu6=0, chip=0 ):
         """
         compute_model_parameters(p, finspin_func)
         p : dict
@@ -1537,11 +1570,15 @@ class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
         model_pars['amp0'] = 2. * sqrt(5. / (64.*pi)) * p['Mtot'] * Constants.MRSUN_SI * p['Mtot'] * Constants.MTSUN_SI / p['distance']
         
         # MRD amplitude deviation coefficients for coprecessing frame modeling 
+        
+        # -- inspiral
+        model_pars['mu0'] = mu0
+        # -- merger-ringdown
         model_pars['mu1'] = mu1
         model_pars['mu2'] = mu2
         model_pars['mu3'] = mu3
         model_pars['mu4'] = mu4
-        #
+        # -- merger-ringdown
         model_pars['nu4'] = nu4
         model_pars['nu5'] = nu5
         model_pars['nu6'] = nu6
@@ -1642,12 +1679,17 @@ class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
         fMRDJoin = model_pars['fmaxCalc']
 
         amp_prefactors = model_pars['amp_prefactors']
+        
+        #
+        chip = model_pars['chip']
+        mu0  = model_pars['mu0']
 
-        AmpPreFac = amp_prefactors['PNamp0'] / powers_of_Mf.seven_sixths
+        # AmpPreFac = amp_prefactors['PNamp0'] / powers_of_Mf.seven_sixths
+        AmpPreFac = (amp_prefactors['PNamp0']+chip*mu0) / powers_of_Mf.seven_sixths
         # split the calculation to just 1 of 3 possible mutually exclusive ranges
         # this effectively implements a step function transition function
         if (Mf <= fInsJoin):	# Inspiral range
-            AmpIns = AmpPreFac * self.AmpInsAnsatz(Mf, powers_of_Mf, amp_prefactors)
+            AmpIns = AmpPreFac * self.AmpInsAnsatz(Mf, powers_of_Mf, amp_prefactors, model_pars)
             return AmpIns
         elif (Mf >= fMRDJoin):	# MRD range
             AmpMRD = AmpPreFac * self.AmpMRDAnsatz(Mf, model_pars)
