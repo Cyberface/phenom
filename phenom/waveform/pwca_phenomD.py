@@ -1555,7 +1555,7 @@ class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
         if p['fRef'] == 0.  : p['fRef'] = p['f_min']
 
         # compute prediction of ringdown frequency
-
+        self.__finspin_func_string__ = finspin_func
         if finspin_func == "FinalSpin0815":
             model_pars['finspin'] = FinalSpin0815(p['eta'], p['chi1z'], p['chi2z'])
         elif finspin_func == "FinalSpinIMRPhenomD_all_in_plane_spin_on_larger_BH":
