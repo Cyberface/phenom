@@ -821,6 +821,7 @@ class PrototypePhenomDCoprecessInternalsPhase(object):
         chip = model_pars['chip']
         
         # Phase parameters
+        alpha0 = model_pars['alpha0']
         alpha1 = model_pars['alpha1']
         alpha2 = model_pars['alpha2']
         alpha3 = model_pars['alpha3']
@@ -833,14 +834,16 @@ class PrototypePhenomDCoprecessInternalsPhase(object):
         chip = model_pars['chip']
         
         #
-        nu1 = 0
-        nu2 = 0
-        nu3 = 0
+        nu0 = 0 # model_pars['nu0']
+        nu1 = model_pars['nu1']
+        nu2 = model_pars['nu2']
+        nu3 = model_pars['nu3']
         nu4 = model_pars['nu4']
         nu5 = model_pars['nu5']
         nu6 = model_pars['nu6']
         
         # Define new paremeters -- Late inspiral, Plunge
+        new_alpha0 = alpha0 + ( chip * nu0 )
         new_alpha1 = alpha1 + ( chip * nu1 )
         new_alpha2 = alpha2 + ( chip * nu2 )
         new_alpha3 = alpha3 + ( chip * nu3 )
@@ -853,7 +856,7 @@ class PrototypePhenomDCoprecessInternalsPhase(object):
         
         # NOTE that part1 is identical to the PhenomD equivalent
         float4by3 = 1.3333333333333333
-        part1 = new_alpha1*Mf  -  new_alpha2/Mf  +  float4by3*new_alpha3*(Mf**0.75)
+        part1 = new_alpha0 * ( new_alpha1*Mf  -  new_alpha2/Mf  +  float4by3 * new_alpha3 * (Mf**0.75) )
         # NOTE that we use arctan here not arctan2 because the denominator is always positive
         part2 = new_alpha4 * arctan( new_dfring / new_fdamp )
         
@@ -899,6 +902,7 @@ class PrototypePhenomDCoprecessInternalsPhase(object):
         # --
         
         # Legacy PhonemD parameters
+        alpha0 = model_pars['alpha0']
         alpha1 = model_pars['alpha1']
         alpha2 = model_pars['alpha2']
         alpha3 = model_pars['alpha3']
@@ -911,9 +915,10 @@ class PrototypePhenomDCoprecessInternalsPhase(object):
         chip = model_pars['chip']
         
         #
-        nu1 = 0
-        nu2 = 0
-        nu3 = 0
+        nu0 = 0 # model_pars['nu0']
+        nu1 = model_pars['nu1']
+        nu2 = model_pars['nu2']
+        nu3 = model_pars['nu3']
         nu4 = model_pars['nu4']
         nu5 = model_pars['nu5']
         nu6 = model_pars['nu6']
@@ -922,6 +927,7 @@ class PrototypePhenomDCoprecessInternalsPhase(object):
         # --
 
         # Define new paremeters -- Late inspiral, Plunge
+        new_alpha0 = alpha0 + ( chip * nu0 )
         new_alpha1 = alpha1 + ( chip * nu1 )
         new_alpha2 = alpha2 + ( chip * nu2 )
         new_alpha3 = alpha3 + ( chip * nu3 )
@@ -933,7 +939,7 @@ class PrototypePhenomDCoprecessInternalsPhase(object):
         new_dfring = Mf - alpha5*new_fring
 
         #
-        part1 = new_alpha1 + new_alpha2*Mf**(-2.0) + new_alpha3*Mf**(-0.25) 
+        part1 = new_alpha0 * (new_alpha1 + new_alpha2*Mf**(-2.0) + new_alpha3*Mf**(-0.25) )
         part2 = new_alpha4 / (  new_fdamp*(1 + (new_dfring**2)/(new_fdamp**2))  )
         
         #
@@ -1485,6 +1491,9 @@ class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
                  mu2 = 0,
                  mu3 = 0,
                  mu4 = 0,
+                 nu1 = 0,
+                 nu2 = 0,
+                 nu3 = 0,
                  nu4 = 0,
                  nu5 = 0,
                  nu6 = 0,
@@ -1553,7 +1562,7 @@ class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
 
         #end of __init__()
 
-    def compute_model_parameters(self, p, finspin_func, rholm=1.0, taulm=1.0, mu0=0, mu1=0, mu2=0, mu3=0, mu4=0, nu4=0, nu5=0, nu6=0, chip=0 ):
+    def compute_model_parameters(self, p, finspin_func, rholm=1.0, taulm=1.0, mu0=0, mu1=0, mu2=0, mu3=0, mu4=0, nu1=0, nu2=0, nu3=0, nu4=0, nu5=0, nu6=0, zeta1=0, zeta2=0, zeta3=0, chip=0 ):
         """
         compute_model_parameters(p, finspin_func)
         p : dict
@@ -1578,7 +1587,11 @@ class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
         model_pars['mu2'] = mu2
         model_pars['mu3'] = mu3
         model_pars['mu4'] = mu4
-        # -- merger-ringdown
+        
+        # -- merger-ringdown for phase modified deviations
+        model_pars['nu1'] = nu1
+        model_pars['nu2'] = nu2
+        model_pars['nu3'] = nu3
         model_pars['nu4'] = nu4
         model_pars['nu5'] = nu5
         model_pars['nu6'] = nu6
@@ -1640,10 +1653,11 @@ class PrototypePhenomDCoprecess(PrototypePhenomDCoprecessInternals):
         model_pars['phi_prefactors'] = self.init_phi_ins_prefactors(model_pars, self.powers_of_pi)
 
         #intermediate phase coeffs
-        model_pars['beta1'] = self.beta1Fit(p)
-        model_pars['beta2'] = self.beta2Fit(p)
-        model_pars['beta3'] = self.beta3Fit(p)
+        model_pars['beta1'] = self.beta1Fit(p) + chip*zeta1
+        model_pars['beta2'] = self.beta2Fit(p) + chip*zeta2
+        model_pars['beta3'] = self.beta3Fit(p) + chip*zeta3
         #merger-ringdown phase coeffs
+        model_pars['alpha0'] = 1.0
         model_pars['alpha1'] = self.alpha1Fit(p)
         model_pars['alpha2'] = self.alpha2Fit(p)
         model_pars['alpha3'] = self.alpha3Fit(p)
