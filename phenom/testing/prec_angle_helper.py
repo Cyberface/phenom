@@ -87,7 +87,9 @@ def evaluate_phenomPv2_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref,
 
     q = m1 / m2
 
-    if q < 1.:
+    # Allow for margin where q may be less than ben still very close to 1. This is useful when inputting masses from NR. 
+    if (abs(q-1)<1e-3): q = 1.0
+    if q<1.0 :
         raise(ValueError("mass-ratio < 1. m1 must be the larger black hole"))
 
     # the angles are functions of dimensionless orbital angular GW frequency
@@ -114,4 +116,3 @@ def evaluate_phenomPv2_angles(flist, m1, m2, s1x, s1y, s1z, s2x, s2y, s2z, fref,
         beta.data[i] = PhenomPBeta(f, q, chip, chi1l)
 
     return alpha.data, beta.data, epsilon.data
-
